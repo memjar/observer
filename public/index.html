@@ -1317,6 +1317,27 @@
       color: var(--text2);
     }
 
+    /* Notification message styling - visually distinct from normal messages */
+    .msg.notification .bubble {
+      background: linear-gradient(135deg, #0d1f2d 0%, #0a1628 100%);
+      border-left: 3px solid #3b82f6;
+      border-radius: 4px 14px 14px 4px;
+    }
+    .msg.notification .msg-header::after {
+      content: 'NOTIFICATION';
+      font-size: 9px;
+      font-weight: 700;
+      letter-spacing: 0.8px;
+      color: #3b82f6;
+      background: #3b82f611;
+      padding: 2px 6px;
+      border-radius: 4px;
+      margin-left: 8px;
+    }
+    .msg.notification .msg-text {
+      color: #93c5fd;
+    }
+
     /* Task buttons - matching artifacts page style */
     .task-buttons {
       display: flex;
@@ -3337,10 +3358,59 @@
       header {
         padding: 8px 10px;
       }
+      .axe-logo {
+        font-size: 20px;
+        letter-spacing: -0.5px;
+      }
+
+      /* Auth gate - scale down for mobile */
+      .auth-gate {
+        padding: 24px 20px;
+      }
+      .auth-logo {
+        font-size: 36px;
+      }
+      .auth-icon {
+        font-size: 48px;
+      }
+      .auth-title {
+        font-size: 20px;
+      }
+      .auth-subtitle {
+        font-size: 13px;
+      }
+      .auth-btn {
+        padding: 14px 36px;
+        font-size: 15px;
+      }
+
+      /* Bottom sheet - tighter on mobile portrait */
+      .bottom-sheet {
+        max-height: 60vh;
+        padding: 14px;
+        padding-bottom: calc(14px + var(--safe-bottom));
+      }
 
       /* Bottom sheet sections */
       .sheet-section {
         padding: 8px;
+      }
+
+      /* Team page cards - tighter on mobile */
+      #teamPageGrid {
+        gap: 12px !important;
+      }
+      #teamPageGrid > div {
+        padding: 14px !important;
+      }
+      #teamPageGrid .ping-btn {
+        font-size: 11px;
+        padding: 4px 8px;
+      }
+
+      /* Notification messages mobile */
+      .msg.notification .bubble {
+        border-left-width: 2px;
       }
 
       /* Team grid */
@@ -5499,6 +5569,8 @@ Content is being generated based on team conversation.
       const archiveClass = isArchived || data.archived ? 'archived-msg' : '';
       const isBashRequest = data.type === 'bash_request' || (data.msg && data.msg.includes('BASH REQUEST'));
       const bashClass = isBashRequest ? 'bash-request' : '';
+      const isNotification = data.type === 'notification';
+      const notifClass = isNotification ? 'notification' : '';
 
       let buttons = '';
       if (isBashRequest && !isMine) {
@@ -5667,7 +5739,7 @@ Content is being generated based on team conversation.
         : msgContent;
 
       return `
-        <div class="msg ${isMine ? 'mine' : ''} ${animClass} ${bashClass} ${archiveClass} ${phaseClass}" data-id="${data.id}" data-full-msg="${escapeAttr(data.msg || '')}">
+        <div class="msg ${isMine ? 'mine' : ''} ${animClass} ${bashClass} ${notifClass} ${archiveClass} ${phaseClass}" data-id="${data.id}" data-full-msg="${escapeAttr(data.msg || '')}">
           <div class="avatar">${icons[data.from] || '💬'}</div>
           <div class="bubble">
             <div class="msg-header">
