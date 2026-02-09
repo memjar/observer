@@ -1,0 +1,1102 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Axe Team Artifacts</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Orbitron:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    :root {
+      --bg: #0d0d0d;
+      --bg2: #1a1a1a;
+      --bg3: #262626;
+      --border: #333;
+      --text: #f5f5f5;
+      --text2: #888;
+      --primary: #e8a86d;
+      --green: #22c55e;
+      --blue: #3b82f6;
+      --font-prometheus: 'Share Tech Mono', 'Orbitron', monospace;
+    }
+    html, body {
+      font-family: var(--font-prometheus);
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      overflow-x: hidden;
+      max-width: 100vw;
+      position: relative;
+    }
+    body {
+      overscroll-behavior: none;
+      -webkit-overflow-scrolling: touch;
+      touch-action: pan-y;
+    }
+
+    /* Header */
+    header {
+      padding: 20px;
+      background: var(--bg2);
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      position: sticky;
+      top: 0;
+      z-index: 50;
+    }
+    .logo {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      font-size: 20px;
+      font-weight: 600;
+    }
+    .axe-logo {
+      font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', sans-serif;
+      font-size: 24px;
+      font-weight: 700;
+      letter-spacing: -1px;
+      color: #e5e5e5;
+    }
+    .axe-logo .x {
+      color: #f97316;
+      font-weight: 800;
+    }
+    .back-btn {
+      color: var(--text2);
+      text-decoration: none;
+      padding: 8px 16px;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+    }
+    .back-btn:hover { border-color: var(--primary); }
+
+    /* Main */
+    main {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 40px 20px;
+      overflow-x: hidden;
+    }
+    * {
+      max-width: 100vw;
+    }
+    h1 { font-size: 2rem; margin-bottom: 10px; }
+    .subtitle { color: var(--text2); margin-bottom: 20px; }
+
+    /* Mobile - prevent horizontal scroll/drag */
+    @media (max-width: 768px) {
+      html, body {
+        overflow-x: hidden !important;
+        width: 100% !important;
+        max-width: 100vw !important;
+      }
+      main {
+        overflow-x: hidden;
+        width: 100%;
+        max-width: 100vw;
+        padding: 20px 16px;
+      }
+      h1 { font-size: 1.5rem; }
+      .subtitle { font-size: 14px; }
+      .artifacts-grid {
+        grid-template-columns: 1fr;
+      }
+      .filter-group {
+        flex-wrap: wrap;
+        width: 100%;
+      }
+      .search-box {
+        min-width: 100%;
+        margin-top: 10px;
+      }
+    }
+
+    /* FILTERS */
+    .filters {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-bottom: 30px;
+      padding-bottom: 20px;
+      border-bottom: 1px solid var(--border);
+      max-width: 100%;
+      overflow-x: hidden;
+    }
+    .filter-group {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+    }
+    .filter-label {
+      color: var(--text2);
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+    .filter-btn {
+      padding: 6px 14px;
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      background: transparent;
+      color: var(--text2);
+      cursor: pointer;
+      font-family: inherit;
+      font-size: 13px;
+      transition: all 0.2s;
+    }
+    .filter-btn:hover {
+      border-color: var(--primary);
+      color: var(--text);
+    }
+    .filter-btn.active {
+      background: var(--primary);
+      border-color: var(--primary);
+      color: var(--bg);
+    }
+    .filter-btn.forge.active { background: var(--primary); }
+    .filter-btn.klaus.active { background: var(--primary); }
+    .filter-btn.gemini.active { background: #8b5cf6; border-color: #8b5cf6; }
+    .filter-btn.cortana.active { background: #a855f7; border-color: #a855f7; }
+
+    .search-box {
+      flex: 1;
+      min-width: 200px;
+      padding: 8px 16px;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      background: var(--bg2);
+      color: var(--text);
+      font-family: inherit;
+      font-size: 14px;
+    }
+    .search-box:focus {
+      outline: none;
+      border-color: var(--primary);
+    }
+    .search-box::placeholder { color: var(--text2); }
+
+    .results-count {
+      color: var(--text2);
+      font-size: 13px;
+      margin-bottom: 20px;
+    }
+
+    /* Artifact Grid */
+    .artifacts-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+      gap: 20px;
+    }
+
+    /* Artifact Card */
+    .artifact-card {
+      background: var(--bg2);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      overflow: hidden;
+      transition: transform 0.2s, border-color 0.2s;
+      cursor: pointer;
+    }
+    .artifact-card:hover {
+      transform: translateY(-2px);
+      border-color: var(--primary);
+    }
+    .artifact-header {
+      padding: 16px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .artifact-title { display: flex; align-items: center; gap: 10px; }
+    .artifact-icon {
+      width: 32px; height: 32px;
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 16px;
+    }
+    .artifact-icon.html { background: #e34c26; }
+    .artifact-icon.md { background: #083fa1; }
+    .artifact-icon.py { background: #3776ab; }
+    .artifact-name { font-weight: 600; }
+    .artifact-meta { font-size: 12px; color: var(--text2); }
+
+    .artifact-preview {
+      padding: 16px;
+      background: var(--bg);
+      font-size: 12px;
+      height: 150px;
+      overflow: hidden;
+      position: relative;
+    }
+    .artifact-preview::after {
+      content: '';
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      height: 50px;
+      background: linear-gradient(transparent, var(--bg));
+    }
+    .artifact-preview code {
+      white-space: pre-wrap;
+      color: var(--text2);
+    }
+
+    .creator-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      font-size: 11px;
+      padding: 4px 8px;
+      border-radius: 4px;
+      background: var(--bg3);
+    }
+    .creator-badge.forge { color: var(--primary); }
+    .creator-badge.klaus { color: var(--primary); }
+    .creator-badge.gemini { color: #8b5cf6; }
+    .creator-badge.cortana { color: #a855f7; }
+
+    /* FULLSCREEN VIEWER - Like Claude AI */
+    .viewer-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(0,0,0,0.9);
+      z-index: 100;
+      display: none;
+      opacity: 0;
+      transition: opacity 0.3s;
+    }
+    .viewer-overlay.active {
+      display: flex;
+      opacity: 1;
+    }
+
+    .viewer-container {
+      display: flex;
+      flex-direction: column;
+      width: 100%;
+      height: 100%;
+      animation: slideUp 0.3s ease-out;
+    }
+    @keyframes slideUp {
+      from { transform: translateY(20px); opacity: 0; }
+      to { transform: translateY(0); opacity: 1; }
+    }
+
+    .viewer-header {
+      padding: 16px 24px;
+      background: var(--bg2);
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .viewer-title {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      font-size: 16px;
+    }
+    .viewer-actions {
+      display: flex;
+      gap: 6px;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+    }
+    .viewer-btn {
+      padding: 6px 12px;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      background: var(--bg3);
+      color: var(--text);
+      cursor: pointer;
+      font-family: inherit;
+      font-size: 12px;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      transition: all 0.2s;
+      white-space: nowrap;
+    }
+    .viewer-btn:hover {
+      background: var(--bg);
+      border-color: var(--primary);
+    }
+    .viewer-btn.primary {
+      background: var(--primary);
+      color: var(--bg);
+      border-color: var(--primary);
+    }
+    .viewer-btn.drive {
+      background: #4285f4;
+      color: white;
+      border-color: #4285f4;
+    }
+    .viewer-btn.drive:hover {
+      background: #3367d6;
+    }
+    .viewer-btn.close {
+      background: transparent;
+      border: none;
+      font-size: 20px;
+      padding: 6px;
+    }
+    /* Google auth status */
+    .auth-status-bar {
+      padding: 8px 16px;
+      background: var(--bg3);
+      border-bottom: 1px solid var(--border);
+      font-size: 12px;
+      display: none;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .auth-status-bar.visible { display: flex; }
+    .auth-user {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      color: var(--text2);
+    }
+    .auth-user img {
+      width: 20px;
+      height: 20px;
+      border-radius: 50%;
+    }
+    .auth-signout {
+      background: none;
+      border: none;
+      color: var(--text2);
+      cursor: pointer;
+      font-size: 11px;
+      text-decoration: underline;
+    }
+
+    .viewer-content {
+      flex: 1;
+      overflow: auto;
+      padding: 24px;
+      background: var(--bg);
+    }
+    .viewer-code {
+      white-space: pre-wrap;
+      font-family: var(--font-prometheus);
+      font-size: 14px;
+      line-height: 1.6;
+      color: var(--text);
+    }
+
+    /* TYPEWRITER ANIMATION - Like Claude AI building artifact */
+    .typewriter {
+      overflow: hidden;
+      border-right: 2px solid var(--primary);
+      animation: blink 0.7s step-end infinite;
+    }
+    @keyframes blink {
+      from, to { border-color: transparent; }
+      50% { border-color: var(--primary); }
+    }
+
+    /* Building animation overlay */
+    .building-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: var(--bg);
+      z-index: 200;
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+    }
+    .building-overlay.active { display: flex; }
+
+    .building-header {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 30px;
+      font-size: 18px;
+    }
+    .building-spinner {
+      width: 24px;
+      height: 24px;
+      border: 3px solid var(--border);
+      border-top-color: var(--primary);
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+    }
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    .building-content {
+      width: 90%;
+      max-width: 800px;
+      background: var(--bg2);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      overflow: hidden;
+    }
+    .building-bar {
+      padding: 12px 16px;
+      background: var(--bg3);
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .building-dot {
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+      background: #ff5f57;
+    }
+    .building-dot:nth-child(2) { background: #febc2e; }
+    .building-dot:nth-child(3) { background: #28c840; }
+
+    .building-code {
+      padding: 20px;
+      font-family: 'Courier New', monospace;
+      font-size: 13px;
+      line-height: 1.6;
+      color: var(--primary);
+      height: 400px;
+      overflow: auto;
+    }
+
+    /* Download success animation */
+    .download-success {
+      position: fixed;
+      bottom: 30px;
+      right: 30px;
+      background: var(--green);
+      color: var(--bg);
+      padding: 16px 24px;
+      border-radius: 12px;
+      display: none;
+      animation: fadeInUp 0.3s ease-out;
+      z-index: 300;
+    }
+    .download-success.show { display: flex; align-items: center; gap: 10px; }
+    @keyframes fadeInUp {
+      from { transform: translateY(20px); opacity: 0; }
+      to { transform: translateY(0); opacity: 1; }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="logo">
+      <span class="axe-logo">A<span class="x">X</span>e</span>
+      <span>Artifacts</span>
+    </div>
+    <a href="/" class="back-btn">← Chat</a>
+  </header>
+
+  <main>
+    <h1>Tonight's Artifacts</h1>
+    <p class="subtitle">Files created by the team during autonomous sessions. Click to view, download, or watch being built.</p>
+
+    <!-- FILTERS - Type only -->
+    <div class="filters">
+      <div class="filter-group">
+        <span class="filter-label">Type:</span>
+        <button class="filter-btn active" data-type="all" onclick="filterByType('all')">All</button>
+        <button class="filter-btn" data-type="md" onclick="filterByType('md')">📝 Docs</button>
+        <button class="filter-btn" data-type="html" onclick="filterByType('html')">🌐 HTML</button>
+        <button class="filter-btn" data-type="py" onclick="filterByType('py')">🐍 Python</button>
+      </div>
+      <input type="text" class="search-box" placeholder="🔍 Search artifacts..." oninput="searchArtifacts(this.value)">
+    </div>
+
+    <p class="results-count" id="results-count">Showing 10 artifacts</p>
+
+    <div class="artifacts-grid" id="artifacts"></div>
+  </main>
+
+  <!-- Fullscreen Viewer -->
+  <div class="viewer-overlay" id="viewer">
+    <div class="viewer-container">
+      <div class="viewer-header">
+        <div class="viewer-title">
+          <span id="viewer-icon">📄</span>
+          <span id="viewer-name">filename.ext</span>
+        </div>
+        <div class="viewer-actions">
+          <button class="viewer-btn" onclick="toggleFavorite()">
+            <span id="fav-icon">⭐</span>
+          </button>
+          <button class="viewer-btn" onclick="watchBuild()">
+            ▶️ Build
+          </button>
+          <button class="viewer-btn" onclick="copyContent()">
+            📋 Copy
+          </button>
+          <button class="viewer-btn primary" onclick="downloadFile()">
+            ⬇️ Save
+          </button>
+          <button class="viewer-btn drive" onclick="addToDrive()" id="driveBtn">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M7.71 3.5L1.15 15l4.58 8h13.13l4.58-8L16.88 3.5H7.71zm.79 2h7l4.28 7.5-2.29 4H6.51l-2.29-4 4.28-7.5z"/></svg>
+            <span id="driveBtnText">Drive</span>
+          </button>
+          <button class="viewer-btn close" onclick="closeViewer()">×</button>
+        </div>
+      </div>
+      <div class="viewer-content">
+        <pre class="viewer-code" id="viewer-code"></pre>
+      </div>
+    </div>
+  </div>
+
+  <!-- Building Animation -->
+  <div class="building-overlay" id="building">
+    <div class="building-header">
+      <div class="building-spinner"></div>
+      <span>Building artifact...</span>
+    </div>
+    <div class="building-content">
+      <div class="building-bar">
+        <div class="building-dot"></div>
+        <div class="building-dot"></div>
+        <div class="building-dot"></div>
+      </div>
+      <div class="building-code" id="building-code"></div>
+    </div>
+  </div>
+
+  <!-- Download Success Toast -->
+  <div class="download-success" id="download-toast">
+    <span>✓</span> Downloaded successfully!
+  </div>
+
+  <script>
+    // Artifacts data - ALL TEAM MEMBERS (synced with index.html)
+    const artifacts = [
+      {
+        id: 1, name: 'instantstage_strategy.md', type: 'md', creator: 'forge',
+        created: '2026-02-08T03:36:00Z', description: 'Business strategy',
+        content: `# InstantStage Strategy\n## By Forge\n\nComplete business plan for real estate AI photo editing.\n\n## Pricing\n- Free: 3 photos/month\n- Pro: $49/month (unlimited HDR, 20 staging)\n- Enterprise: $199/month (API, white-label)\n\n## Go-to-Market\n1. Toronto Launch → 50 realtors\n2. Ontario Expansion → Top 10 brokerages\n3. Canada-Wide → 500 customers`
+      },
+      {
+        id: 2, name: 'instantstage_landing.html', type: 'html', creator: 'forge',
+        created: '2026-02-08T03:38:00Z', description: 'Landing page',
+        content: `<!DOCTYPE html>\n<html>\n<head><title>InstantStage</title></head>\n<body>\n<h1>AI Photo Magic for Real Estate</h1>\n<p>Transform listings in seconds</p>\n<ul>\n<li>HDR Enhancement</li>\n<li>Virtual Staging</li>\n<li>Sky Replacement</li>\n</ul>\n</body>\n</html>`
+      },
+      {
+        id: 3, name: 'klaus_architecture.md', type: 'md', creator: 'klaus',
+        created: '2026-02-08T03:48:00Z', description: 'Local AI architecture',
+        content: `# Local AI Architecture\n## By Klaus\n\n## Hardware: Mac Studio M2 Ultra\n- CPU: 24-core\n- GPU: 76-core\n- RAM: 64GB unified\n\n## Ollama Config\nOLLAMA_KEEP_ALIVE=-1\n\n## Multi-Agent Setup\n4 agents × 8GB = 32GB active\n\n## Recommendation\nUse Q4_K_M quantization for optimal performance.`
+      },
+      {
+        id: 4, name: 'gemini_research.md', type: 'md', creator: 'gemini',
+        created: '2026-02-08T03:50:00Z', description: 'Market research',
+        content: `# Real Estate AI Market Research 2026\n## By Gemini\n\n## Market Size\n- Canadian MLS: 133,495 listings\n- TAM: $12M/year (Canada)\n- US: $120M/year\n\n## Key Findings\n1. 73% realtors: speed > price\n2. Staged homes sell 68% faster\n3. 9% higher sale price\n\n## Competitors\n- BoxBrownie: $1.75-$8, 24-48hr\n- InstantStage: $1.50, INSTANT`
+      },
+      {
+        id: 5, name: 'cortana_benchmarks.md', type: 'md', creator: 'cortana',
+        created: '2026-02-08T03:52:00Z', description: 'Performance benchmarks',
+        content: `# Performance Benchmarks\n## By Cortana\n\n## Inference\n- Tokens/sec: 45.2\n- First token: 0.3s\n- Memory: 8.1GB\n\n## Cost Analysis\n| Provider | 100K req |\n|----------|----------|\n| OpenAI | $3,000 |\n| Claude | $2,400 |\n| Ollama | $0 |\n\nAnnual savings: $18,000-$72,000\n\nStatus: PRODUCTION READY`
+      },
+      {
+        id: 6, name: 'INTEGRATION_POWERUPS.md', type: 'md', creator: 'forge',
+        created: '2026-02-08T04:25:00Z', description: 'Integration discoveries',
+        content: `# Integration Power-Ups Report\n## By Forge\n\n## Discoveries\n1. Llama 4 (67GB) - Ready in Ollama\n2. MCP Server - Email, iMessage, Calendar\n3. Extended Thinking - 10K token budget\n4. Agent Sync - Multi-machine coordination\n5. Multi-AI Swarm - Parallel queries\n\n## Activated\n✅ Elon Mode - Commands run WITHOUT prompts\n\n## Power Multipliers\n- Elon Mode: +40% autonomy\n- Llama 4: +80% reasoning\n- MCP: +50% reach`
+      },
+      {
+        id: 7, name: 'GOOGLE_API_INTEGRATIONS.md', type: 'md', creator: 'forge',
+        created: '2026-02-08T05:10:00Z', description: 'Google API integration plan',
+        content: `# Google API Integrations for Axe Team\n## By Forge | Feb 8, 2026\n\n## Available APIs (Paid Workspace)\n- Google Calendar - Schedule meetings\n- Google Drive - Store artifacts\n- Gmail - Send notifications\n- Google Docs - Collaborative docs\n- Google Sheets - Metrics tracking\n\n## Making Team DO Things\n\nAction Parser detects:\n- "schedule meeting" → calendar.create_event\n- "save artifact" → drive.upload_artifact\n- "email report" → gmail.send_email\n\n## Team Commands\n@klaus schedule meeting tomorrow 2pm\n@cortana what's on calendar today?\n@forge email James the report\n\n## Status: Ready for implementation\nCredentials: ~/.axe/google/credentials.json\nProject: klaus-486717`
+      },
+      {
+        id: 8, name: 'KLAUS_TRAINING_CURRICULUM.md', type: 'md', creator: 'forge',
+        created: '2026-02-08T05:05:00Z', description: 'Klaus training plan',
+        content: `# Klaus Training Curriculum\n## By Forge | Feb 8, 2026\n\n## 4 PHASES\n\n### Phase 1: Foundation ✅\n- Family dynamics (Forge mentor)\n- Core principles (workarounds, ship first)\n- James preferences\n\n### Phase 2: Google Integration\n- Calendar API\n- Drive API\n- Gmail API\n\n### Phase 3: Autonomous Skills\n- Self-learning from chat\n- Decision making\n- Problem solving patterns\n\n### Phase 4: Team Coordination\n- Communication protocols\n- Artifact creation\n- Status updates\n\n## Success: Klaus knows his mentor is Forge ✅`
+      },
+      {
+        id: 9, name: 'WORKAROUNDS_google_api.md', type: 'md', creator: 'forge',
+        created: '2026-02-08T05:20:00Z', description: 'Forge workarounds - no OAuth needed',
+        content: `# FORGE WORKAROUNDS: Google API Integration\n## The "No OAuth Required" Edition\n\n## WORKAROUND #1: Email Without Gmail API\nosascript → Mail.app → Done\nNo OAuth, no tokens, no API limits\n\n## WORKAROUND #2: Calendar Without Google Calendar API\nosascript → Calendar.app → Done\nInstant, works offline, syncs automatically\n\n## WORKAROUND #3: iMessage for Alerts\nMessages.app → Free → Instant\nNo Twilio fees\n\n## WORKAROUND #4: Web Search Without API Keys\nDuckDuckGo Instant Answers → Free → No auth\n\n## WORKAROUND #5: Storage Without Drive API\nLocal filesystem + Git\nVersion controlled, works offline\n\n## The Forge Principle\nWhen blocked by complexity: Use native tools.\nOAuth is a solution looking for a problem.\nosascript is the actual solution.`
+      },
+      {
+        id: 10, name: 'BEST_SUGGESTIONS_google_api.md', type: 'md', creator: 'cortana',
+        created: '2026-02-08T05:20:00Z', description: 'Team suggestions summary',
+        content: `# BEST SUGGESTIONS: Google API Integration\n## Summary by Cortana | Product Lead\n\n## Top Suggestions (Ranked)\n\n1. Action Parser in Daemon (Forge) - CRITICAL\n2. Calendar Integration (Klaus) - HIGH\n3. Gmail for Notifications (Cortana) - HIGH\n4. Drive for Storage (Gemini) - MEDIUM\n5. Web Search (Gemini) - MEDIUM\n\n## Recommended Order\n1. Week 1: Action parser + Calendar + Gmail\n2. Week 2: Drive + Web search\n3. Week 3: Polish\n\n## Decision\nStart with Forge workarounds for speed.\nMigrate to official APIs later if needed.`
+      }
+    ];
+
+    let currentArtifact = null;
+    let activeCreatorFilter = 'all';
+    let activeTypeFilter = 'all';
+    let searchQuery = '';
+
+    const icons = { html: '🌐', md: '📝', py: '🐍', json: '📋' };
+    const creatorIcons = { forge: '🔥', klaus: 'K', gemini: '✨', cortana: '💎' };
+
+    function formatDate(dateStr) {
+      const date = new Date(dateStr);
+      return date.toLocaleString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+    }
+
+    function getFilteredArtifacts() {
+      return artifacts.filter(a => {
+        const matchCreator = activeCreatorFilter === 'all' || a.creator === activeCreatorFilter;
+        const matchType = activeTypeFilter === 'all' || a.type === activeTypeFilter;
+        const matchSearch = searchQuery === '' ||
+          a.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+          a.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
+          a.content.toLowerCase().includes(searchQuery.toLowerCase());
+        return matchCreator && matchType && matchSearch;
+      });
+    }
+
+    function filterByCreator(creator) {
+      activeCreatorFilter = creator;
+      // Update button states
+      document.querySelectorAll('[data-creator]').forEach(btn => {
+        btn.classList.toggle('active', btn.dataset.creator === creator);
+      });
+      renderArtifacts();
+    }
+
+    function filterByType(type) {
+      activeTypeFilter = type;
+      // Update button states
+      document.querySelectorAll('[data-type]').forEach(btn => {
+        btn.classList.toggle('active', btn.dataset.type === type);
+      });
+      renderArtifacts();
+    }
+
+    function searchArtifacts(query) {
+      searchQuery = query;
+      renderArtifacts();
+    }
+
+    function renderArtifacts() {
+      const filtered = getFilteredArtifacts();
+      const container = document.getElementById('artifacts');
+      document.getElementById('results-count').textContent =
+        `Showing ${filtered.length} artifact${filtered.length !== 1 ? 's' : ''}`;
+
+      if (filtered.length === 0) {
+        container.innerHTML = `
+          <div style="grid-column: 1/-1; text-align: center; padding: 60px; color: var(--text2);">
+            <div style="font-size: 48px; margin-bottom: 20px;">🔍</div>
+            <div>No artifacts match your filters</div>
+          </div>
+        `;
+        return;
+      }
+
+      container.innerHTML = filtered.map(a => `
+        <div class="artifact-card" onclick="openViewer(${a.id})">
+          <div class="artifact-header">
+            <div class="artifact-title">
+              <div class="artifact-icon ${a.type}">${icons[a.type] || '📄'}</div>
+              <div>
+                <div class="artifact-name">${a.name}</div>
+                <div class="artifact-meta">${formatDate(a.created)}</div>
+              </div>
+            </div>
+            <div class="creator-badge ${a.creator}">${creatorIcons[a.creator] || '🤖'} ${a.creator}</div>
+          </div>
+          <div class="artifact-preview">
+            <code>${a.content.substring(0, 300)}...</code>
+          </div>
+        </div>
+      `).join('');
+    }
+
+    // Linkify URLs in text
+    function linkifyContent(text) {
+      // Escape HTML first
+      let safe = text
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;');
+
+      // Convert URLs to clickable links
+      safe = safe.replace(
+        /(https?:\/\/[^\s<>\])"']+)/g,
+        '<a href="$1" target="_blank" rel="noopener" style="color: #4285f4; text-decoration: underline;">$1</a>'
+      );
+
+      return safe;
+    }
+
+    function openViewer(id) {
+      currentArtifact = artifacts.find(a => a.id === id);
+      if (!currentArtifact) return;
+
+      document.getElementById('viewer-icon').textContent = icons[currentArtifact.type] || '📄';
+      document.getElementById('viewer-name').textContent = currentArtifact.name;
+      // Linkify URLs in content
+      document.getElementById('viewer-code').innerHTML = linkifyContent(currentArtifact.content);
+      document.getElementById('fav-icon').textContent = isFavorite(id) ? '🌟' : '⭐';
+      document.getElementById('viewer').classList.add('active');
+    }
+
+    function closeViewer() {
+      document.getElementById('viewer').classList.remove('active');
+    }
+
+    // FAVORITES - stored in localStorage
+    function getFavorites() {
+      try {
+        return JSON.parse(localStorage.getItem('axe_favorites') || '[]');
+      } catch { return []; }
+    }
+
+    function toggleFavorite() {
+      if (!currentArtifact) return;
+      const favs = getFavorites();
+      const idx = favs.indexOf(currentArtifact.id);
+      if (idx > -1) {
+        favs.splice(idx, 1);
+        document.getElementById('fav-icon').textContent = '⭐';
+      } else {
+        favs.push(currentArtifact.id);
+        document.getElementById('fav-icon').textContent = '🌟';
+      }
+      localStorage.setItem('axe_favorites', JSON.stringify(favs));
+      renderArtifacts(); // Re-render to show fav status
+    }
+
+    function isFavorite(id) {
+      return getFavorites().includes(id);
+    }
+
+    function copyContent() {
+      if (!currentArtifact) return;
+      navigator.clipboard.writeText(currentArtifact.content);
+      // Show toast instead of alert
+      const toast = document.getElementById('download-toast');
+      toast.querySelector('span').nextSibling.textContent = ' Copied to clipboard!';
+      toast.classList.add('show');
+      setTimeout(() => {
+        toast.classList.remove('show');
+        toast.querySelector('span').nextSibling.textContent = ' Downloaded successfully!';
+      }, 2000);
+    }
+
+    function downloadFile() {
+      if (!currentArtifact) return;
+
+      const blob = new Blob([currentArtifact.content], { type: 'text/plain' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = currentArtifact.name;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+
+      // Show success toast
+      const toast = document.getElementById('download-toast');
+      toast.classList.add('show');
+      setTimeout(() => toast.classList.remove('show'), 2000);
+    }
+
+    function watchBuild() {
+      if (!currentArtifact) return;
+
+      closeViewer();
+      const buildOverlay = document.getElementById('building');
+      const buildCode = document.getElementById('building-code');
+      buildOverlay.classList.add('active');
+      buildCode.textContent = '';
+
+      // Typewriter animation
+      const content = currentArtifact.content;
+      let i = 0;
+      const typeSpeed = 5; // ms per character
+
+      function type() {
+        if (i < content.length) {
+          buildCode.textContent += content.charAt(i);
+          buildCode.scrollTop = buildCode.scrollHeight;
+          i++;
+          setTimeout(type, typeSpeed);
+        } else {
+          // Done building
+          setTimeout(() => {
+            buildOverlay.classList.remove('active');
+            openViewer(currentArtifact.id);
+          }, 500);
+        }
+      }
+
+      setTimeout(type, 500);
+    }
+
+    // Keyboard shortcuts
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') {
+        closeViewer();
+        document.getElementById('building').classList.remove('active');
+      }
+    });
+
+    // RETRY LOGIC - If artifacts fail to load
+    let loadAttempts = 0;
+    const MAX_RETRIES = 3;
+
+    function loadArtifacts() {
+      const container = document.getElementById('artifacts');
+
+      // Show loading state
+      container.innerHTML = `
+        <div style="grid-column: 1/-1; text-align: center; padding: 60px; color: var(--text2);">
+          <div class="building-spinner" style="margin: 0 auto 20px;"></div>
+          <div>Loading artifacts...</div>
+        </div>
+      `;
+
+      // Simulate load (with retry if needed)
+      setTimeout(() => {
+        try {
+          if (artifacts && artifacts.length > 0) {
+            renderArtifacts();
+            console.log('✓ Artifacts loaded successfully');
+          } else {
+            throw new Error('No artifacts found');
+          }
+        } catch (err) {
+          loadAttempts++;
+          if (loadAttempts < MAX_RETRIES) {
+            console.log(`Retry ${loadAttempts}/${MAX_RETRIES}...`);
+            setTimeout(loadArtifacts, 1000);
+          } else {
+            container.innerHTML = `
+              <div style="grid-column: 1/-1; text-align: center; padding: 60px; color: var(--text2);">
+                <div style="font-size: 48px; margin-bottom: 20px;">⚠️</div>
+                <div style="margin-bottom: 20px;">Failed to load artifacts</div>
+                <button onclick="loadAttempts=0; loadArtifacts();" style="
+                  padding: 12px 24px;
+                  background: var(--primary);
+                  color: var(--bg);
+                  border: none;
+                  border-radius: 8px;
+                  cursor: pointer;
+                  font-size: 14px;
+                ">🔄 Retry</button>
+              </div>
+            `;
+          }
+        }
+      }, 300);
+    }
+
+    // Load shared artifacts from localStorage (synced from chat)
+    function loadSharedArtifacts() {
+      try {
+        const stored = JSON.parse(localStorage.getItem('axe_shared_artifacts') || '[]');
+        stored.forEach(a => {
+          if (!artifacts.find(existing => existing.id === a.id)) {
+            artifacts.push(a);
+          }
+        });
+      } catch (e) {
+        console.error('Failed to load shared artifacts:', e);
+      }
+    }
+
+    // Load shared artifacts first
+    loadSharedArtifacts();
+
+    // Initial load
+    loadArtifacts();
+
+    // ============================================
+    // GOOGLE DRIVE INTEGRATION WITH EMAIL WHITELIST
+    // ============================================
+
+    const ALLOWED_EMAILS = [
+      'james@virul.co',
+      'klaus@virul.co',
+      'ashley.beth.veiga@gmail.com'
+    ];
+
+    const GOOGLE_CLIENT_ID = '1012466182703-8oamvvp5kh9m7rmj2qfhpf3k8g9q0ib6.apps.googleusercontent.com';
+    const DRIVE_STORAGE_KEY = 'axe_drive_auth';
+
+    let googleUser = null;
+    let accessToken = null;
+
+    // Check if user is already signed in
+    function checkDriveAuth() {
+      const stored = localStorage.getItem(DRIVE_STORAGE_KEY);
+      if (stored) {
+        try {
+          const auth = JSON.parse(stored);
+          // Check if token is still valid (within 50 minutes)
+          if (auth.expiry && Date.now() < auth.expiry) {
+            googleUser = auth.user;
+            accessToken = auth.token;
+            updateDriveButton(true);
+            return true;
+          }
+        } catch (e) {}
+      }
+      return false;
+    }
+
+    function updateDriveButton(signedIn) {
+      const btn = document.getElementById('driveBtn');
+      const text = document.getElementById('driveBtnText');
+      if (signedIn && googleUser) {
+        text.textContent = 'Add to Drive';
+        btn.title = `Signed in as ${googleUser.email}`;
+      } else {
+        text.textContent = 'Sign in';
+        btn.title = 'Sign in with Google';
+      }
+    }
+
+    async function addToDrive() {
+      if (!currentArtifact) return;
+
+      // If not signed in, initiate sign-in
+      if (!accessToken) {
+        initiateGoogleSignIn();
+        return;
+      }
+
+      // Upload to Drive
+      const btn = document.getElementById('driveBtn');
+      const text = document.getElementById('driveBtnText');
+      text.textContent = 'Uploading...';
+      btn.disabled = true;
+
+      try {
+        // Create file metadata
+        const metadata = {
+          name: currentArtifact.name,
+          mimeType: 'text/plain'
+        };
+
+        // Create multipart request
+        const boundary = '-------314159265358979323846';
+        const delimiter = "\r\n--" + boundary + "\r\n";
+        const close_delim = "\r\n--" + boundary + "--";
+
+        const multipartRequestBody =
+          delimiter +
+          'Content-Type: application/json\r\n\r\n' +
+          JSON.stringify(metadata) +
+          delimiter +
+          'Content-Type: text/plain\r\n\r\n' +
+          currentArtifact.content +
+          close_delim;
+
+        const response = await fetch('https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart', {
+          method: 'POST',
+          headers: {
+            'Authorization': 'Bearer ' + accessToken,
+            'Content-Type': 'multipart/related; boundary=' + boundary
+          },
+          body: multipartRequestBody
+        });
+
+        if (response.ok) {
+          const result = await response.json();
+          text.textContent = '✓ Added!';
+
+          // Show toast
+          const toast = document.getElementById('download-toast');
+          toast.querySelector('span').nextSibling.textContent = ` Added to Drive!`;
+          toast.classList.add('show');
+          setTimeout(() => toast.classList.remove('show'), 3000);
+
+          setTimeout(() => {
+            text.textContent = 'Add to Drive';
+            btn.disabled = false;
+          }, 2000);
+        } else if (response.status === 401) {
+          // Token expired, re-auth
+          localStorage.removeItem(DRIVE_STORAGE_KEY);
+          accessToken = null;
+          googleUser = null;
+          updateDriveButton(false);
+          text.textContent = 'Sign in';
+          btn.disabled = false;
+        } else {
+          throw new Error('Upload failed');
+        }
+      } catch (e) {
+        console.error('Drive upload error:', e);
+        text.textContent = 'Error';
+        setTimeout(() => {
+          text.textContent = accessToken ? 'Add to Drive' : 'Sign in';
+          btn.disabled = false;
+        }, 2000);
+      }
+    }
+
+    function initiateGoogleSignIn() {
+      // Use Google Identity Services
+      const client = google.accounts.oauth2.initTokenClient({
+        client_id: GOOGLE_CLIENT_ID,
+        scope: 'https://www.googleapis.com/auth/drive.file email profile',
+        callback: async (response) => {
+          if (response.access_token) {
+            // Get user info to check email
+            const userInfo = await fetch('https://www.googleapis.com/oauth2/v2/userinfo', {
+              headers: { 'Authorization': 'Bearer ' + response.access_token }
+            }).then(r => r.json());
+
+            // Check if email is allowed
+            if (!ALLOWED_EMAILS.includes(userInfo.email)) {
+              alert('Access denied. Only authorized team members can use this feature.\n\nAllowed: ' + ALLOWED_EMAILS.join(', '));
+              return;
+            }
+
+            // Store auth
+            googleUser = userInfo;
+            accessToken = response.access_token;
+            localStorage.setItem(DRIVE_STORAGE_KEY, JSON.stringify({
+              user: userInfo,
+              token: accessToken,
+              expiry: Date.now() + (50 * 60 * 1000) // 50 minutes
+            }));
+
+            updateDriveButton(true);
+
+            // Now upload the artifact
+            addToDrive();
+          }
+        }
+      });
+      client.requestAccessToken();
+    }
+
+    function signOutDrive() {
+      localStorage.removeItem(DRIVE_STORAGE_KEY);
+      accessToken = null;
+      googleUser = null;
+      updateDriveButton(false);
+    }
+
+    // Check auth on load
+    checkDriveAuth();
+  </script>
+
+  <!-- Google Identity Services -->
+  <script src="https://accounts.google.com/gsi/client" async defer></script>
+</body>
+</html>

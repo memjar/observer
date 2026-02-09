@@ -1,0 +1,984 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="theme-color" content="#0d0d0d">
+  <title>Klaus - Training Mode</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #0d0d0d;
+      --bg2: #1a1a1a;
+      --bg3: #262626;
+      --text: #f5f5f5;
+      --text-dim: #888;
+      --klaus: #e8a86d;
+      --klaus-glow: rgba(232, 168, 109, 0.2);
+      --green: #22c55e;
+      --border: #333;
+      --safe-bottom: env(safe-area-inset-bottom, 20px);
+    }
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: 'Inter', -apple-system, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* Header */
+    header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 12px 16px;
+      background: var(--bg);
+      border-bottom: 1px solid var(--border);
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+    .header-left {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .back-btn {
+      width: 36px;
+      height: 36px;
+      border-radius: 10px;
+      border: none;
+      background: var(--bg2);
+      color: var(--text);
+      font-size: 18px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .klaus-avatar {
+      width: 40px;
+      height: 40px;
+      border-radius: 12px;
+      background: var(--klaus);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 700;
+      font-size: 18px;
+      color: #000;
+    }
+    .klaus-info h1 {
+      font-size: 16px;
+      font-weight: 600;
+    }
+    .klaus-status {
+      font-size: 12px;
+      color: var(--green);
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+    .klaus-status::before {
+      content: '';
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: var(--green);
+    }
+
+    /* Training Mode Toggle */
+    .header-right {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .training-toggle {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 12px;
+      background: var(--bg2);
+      border-radius: 20px;
+      font-size: 12px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .training-toggle.active {
+      background: var(--klaus-glow);
+      border: 1px solid var(--klaus);
+    }
+    .training-toggle input {
+      display: none;
+    }
+    .toggle-switch {
+      width: 32px;
+      height: 18px;
+      background: var(--bg3);
+      border-radius: 9px;
+      position: relative;
+      transition: all 0.2s;
+    }
+    .toggle-switch::after {
+      content: '';
+      position: absolute;
+      width: 14px;
+      height: 14px;
+      background: var(--text);
+      border-radius: 50%;
+      top: 2px;
+      left: 2px;
+      transition: all 0.2s;
+    }
+    .training-toggle.active .toggle-switch {
+      background: var(--klaus);
+    }
+    .training-toggle.active .toggle-switch::after {
+      left: 16px;
+    }
+
+    /* Chat Container */
+    .chat-container {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      max-width: 800px;
+      margin: 0 auto;
+      width: 100%;
+      padding: 0 16px;
+    }
+
+    /* Messages */
+    #messages {
+      flex: 1;
+      overflow-y: auto;
+      padding: 20px 0;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+    .message {
+      display: flex;
+      gap: 12px;
+      animation: fadeIn 0.3s ease;
+    }
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    .message.user {
+      flex-direction: row-reverse;
+    }
+    .msg-avatar {
+      width: 32px;
+      height: 32px;
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 14px;
+      flex-shrink: 0;
+    }
+    .message.klaus .msg-avatar {
+      background: var(--klaus);
+      color: #000;
+      font-weight: 700;
+    }
+    .message.user .msg-avatar {
+      background: var(--bg3);
+    }
+    .msg-content {
+      max-width: 75%;
+      padding: 12px 16px;
+      border-radius: 16px;
+      line-height: 1.5;
+      font-size: 14px;
+    }
+    .message.klaus .msg-content {
+      background: var(--bg2);
+      border-radius: 16px 16px 16px 4px;
+    }
+    .message.user .msg-content {
+      background: var(--klaus);
+      color: #000;
+      border-radius: 16px 16px 4px 16px;
+    }
+    .msg-content pre {
+      background: var(--bg);
+      padding: 12px;
+      border-radius: 8px;
+      overflow-x: auto;
+      margin: 8px 0;
+      font-size: 13px;
+    }
+    .msg-content code {
+      background: var(--bg);
+      padding: 2px 6px;
+      border-radius: 4px;
+      font-size: 13px;
+    }
+
+    /* Typing indicator */
+    .typing-indicator {
+      display: flex;
+      gap: 4px;
+      padding: 12px 16px;
+    }
+    .typing-indicator span {
+      width: 8px;
+      height: 8px;
+      background: var(--klaus);
+      border-radius: 50%;
+      animation: bounce 1.4s infinite both;
+    }
+    .typing-indicator span:nth-child(1) { animation-delay: 0s; }
+    .typing-indicator span:nth-child(2) { animation-delay: 0.2s; }
+    .typing-indicator span:nth-child(3) { animation-delay: 0.4s; }
+    @keyframes bounce {
+      0%, 80%, 100% { transform: scale(0.8); opacity: 0.5; }
+      40% { transform: scale(1); opacity: 1; }
+    }
+
+    /* Thinking Steps */
+    .thinking-container {
+      display: flex;
+      gap: 12px;
+      animation: fadeIn 0.3s ease;
+    }
+    .thinking-panel {
+      max-width: 75%;
+      border-left: 2px solid var(--klaus);
+      padding: 8px 0 8px 12px;
+      margin-left: 44px;
+    }
+    .thinking-toggle {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      cursor: pointer;
+      font-size: 12px;
+      color: var(--text-dim);
+      padding: 4px 0;
+      user-select: none;
+    }
+    .thinking-toggle:hover { color: var(--text); }
+    .thinking-toggle .toggle-arrow {
+      transition: transform 0.2s;
+      font-size: 10px;
+    }
+    .thinking-toggle .toggle-arrow.collapsed { transform: rotate(-90deg); }
+    .thinking-steps-list {
+      overflow: hidden;
+      transition: max-height 0.3s ease, opacity 0.3s ease;
+      max-height: 300px;
+      opacity: 1;
+    }
+    .thinking-steps-list.collapsed {
+      max-height: 0;
+      opacity: 0;
+    }
+    .thinking-step {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 4px 0;
+      font-size: 13px;
+      color: var(--text-dim);
+      animation: fadeIn 0.3s ease;
+    }
+    .thinking-step .step-icon {
+      width: 16px;
+      height: 16px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+    .thinking-step .step-spinner {
+      width: 14px;
+      height: 14px;
+      border: 2px solid var(--border);
+      border-top-color: var(--klaus);
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+    }
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+    .thinking-step.complete .step-icon { color: var(--green); }
+    .thinking-step.complete { color: var(--text-dim); }
+    .thinking-summary {
+      font-size: 12px;
+      color: var(--text-dim);
+      padding: 4px 0;
+      display: none;
+    }
+    .thinking-summary.visible { display: block; }
+
+    /* Input Area */
+    .input-area {
+      padding: 16px;
+      padding-bottom: calc(16px + var(--safe-bottom));
+      border-top: 1px solid var(--border);
+      background: var(--bg);
+    }
+    .input-container {
+      display: flex;
+      gap: 12px;
+      max-width: 800px;
+      margin: 0 auto;
+    }
+    #chatInput {
+      flex: 1;
+      padding: 14px 18px;
+      border-radius: 24px;
+      border: 1px solid var(--border);
+      background: var(--bg2);
+      color: var(--text);
+      font-size: 15px;
+      font-family: inherit;
+      resize: none;
+      outline: none;
+      min-height: 48px;
+      max-height: 120px;
+    }
+    #chatInput:focus {
+      border-color: var(--klaus);
+    }
+    #chatInput::placeholder {
+      color: var(--text-dim);
+    }
+    #sendBtn {
+      width: 48px;
+      height: 48px;
+      border-radius: 50%;
+      border: none;
+      background: var(--klaus);
+      color: #000;
+      font-size: 20px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.2s;
+    }
+    #sendBtn:hover {
+      transform: scale(1.05);
+      box-shadow: 0 4px 20px var(--klaus-glow);
+    }
+    #sendBtn:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+      transform: none;
+    }
+
+    /* Training Mode Banner */
+    .training-banner {
+      background: linear-gradient(90deg, var(--klaus-glow), transparent);
+      padding: 8px 16px;
+      font-size: 12px;
+      color: var(--klaus);
+      display: none;
+      align-items: center;
+      gap: 8px;
+    }
+    .training-banner.active {
+      display: flex;
+    }
+
+    /* Share to Team Button */
+    .msg-actions {
+      display: flex;
+      gap: 8px;
+      margin-top: 8px;
+      opacity: 0;
+      transition: opacity 0.2s;
+    }
+    .message:hover .msg-actions {
+      opacity: 1;
+    }
+    .msg-action-btn {
+      padding: 4px 10px;
+      border-radius: 12px;
+      border: 1px solid var(--border);
+      background: var(--bg);
+      color: var(--text-dim);
+      font-size: 11px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .msg-action-btn:hover {
+      background: var(--bg2);
+      border-color: var(--klaus);
+      color: var(--text);
+    }
+
+    /* Welcome Screen */
+    .welcome {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      padding: 40px;
+    }
+    .welcome-avatar {
+      width: 80px;
+      height: 80px;
+      border-radius: 24px;
+      background: var(--klaus);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 36px;
+      font-weight: 700;
+      color: #000;
+      margin-bottom: 24px;
+      box-shadow: 0 8px 40px var(--klaus-glow);
+    }
+    .welcome h2 {
+      font-size: 24px;
+      margin-bottom: 12px;
+    }
+    .welcome p {
+      color: var(--text-dim);
+      max-width: 400px;
+      line-height: 1.6;
+      margin-bottom: 24px;
+    }
+    .welcome-prompts {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      justify-content: center;
+    }
+    .welcome-prompt {
+      padding: 10px 16px;
+      background: var(--bg2);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      color: var(--text);
+      font-size: 13px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .welcome-prompt:hover {
+      border-color: var(--klaus);
+      background: var(--bg3);
+    }
+
+    /* Toast */
+    .toast {
+      position: fixed;
+      bottom: 100px;
+      left: 50%;
+      transform: translateX(-50%) translateY(100px);
+      background: var(--green);
+      color: #000;
+      padding: 12px 24px;
+      border-radius: 24px;
+      font-size: 14px;
+      font-weight: 500;
+      z-index: 1000;
+      transition: transform 0.3s ease;
+    }
+    .toast.show {
+      transform: translateX(-50%) translateY(0);
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="header-left">
+      <button class="back-btn" onclick="window.location.href='/'">←</button>
+      <div class="klaus-avatar">K</div>
+      <div class="klaus-info">
+        <h1>Klaus</h1>
+        <div class="klaus-status" id="statusText">Online</div>
+      </div>
+    </div>
+    <div class="header-right">
+      <label class="training-toggle" id="trainingToggle">
+        <input type="checkbox" id="trainingMode">
+        <span>Training</span>
+        <div class="toggle-switch"></div>
+      </label>
+    </div>
+  </header>
+
+  <div class="training-banner" id="trainingBanner">
+    <span>🎓</span>
+    <span>Training Mode Active - Klaus will remember what you teach</span>
+  </div>
+
+  <div class="chat-container">
+    <div id="messages">
+      <div class="welcome" id="welcome">
+        <div class="welcome-avatar">K</div>
+        <h2>Hey James!</h2>
+        <p>I'm Klaus, your AI apprentice. Chat with me, teach me new things, or just brainstorm ideas. Everything we discuss helps me learn and grow.</p>
+        <div class="welcome-prompts">
+          <button class="welcome-prompt" onclick="usePrompt('Tell me about yourself, Klaus')">Who are you?</button>
+          <button class="welcome-prompt" onclick="usePrompt('What have you learned recently?')">Recent learnings</button>
+          <button class="welcome-prompt" onclick="usePrompt('Klaus, remember that...')">Teach something</button>
+          <button class="welcome-prompt" onclick="usePrompt('Help me brainstorm ideas for')">Brainstorm</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="input-area">
+    <div class="input-container">
+      <textarea id="chatInput" placeholder="Message Klaus..." rows="1"></textarea>
+      <button id="sendBtn" onclick="sendMessage()">↑</button>
+    </div>
+  </div>
+
+  <div class="toast" id="toast"></div>
+
+  <script>
+    // Config
+    const GROQ_API = '/api/klaus-chat';
+    const TEAM_API = '/api/messages';
+    const STORAGE_KEY = 'klaus-training-history';
+
+    let messages = [];
+    let isStreaming = false;
+    let trainingMode = false;
+
+    // DOM elements
+    const messagesEl = document.getElementById('messages');
+    const welcomeEl = document.getElementById('welcome');
+    const inputEl = document.getElementById('chatInput');
+    const sendBtn = document.getElementById('sendBtn');
+    const trainingToggle = document.getElementById('trainingToggle');
+    const trainingBanner = document.getElementById('trainingBanner');
+
+    // Load history
+    function loadHistory() {
+      try {
+        const stored = localStorage.getItem(STORAGE_KEY);
+        if (stored) {
+          messages = JSON.parse(stored);
+          if (messages.length > 0) {
+            welcomeEl.style.display = 'none';
+            messages.forEach(m => appendMessage(m.role, m.content, false));
+          }
+        }
+      } catch (e) {}
+    }
+
+    // Save history
+    function saveHistory() {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(messages.slice(-50)));
+    }
+
+    // Training mode toggle
+    trainingToggle.addEventListener('click', () => {
+      trainingMode = !trainingMode;
+      trainingToggle.classList.toggle('active', trainingMode);
+      trainingBanner.classList.toggle('active', trainingMode);
+    });
+
+    // Auto-resize textarea
+    inputEl.addEventListener('input', () => {
+      inputEl.style.height = 'auto';
+      inputEl.style.height = Math.min(inputEl.scrollHeight, 120) + 'px';
+    });
+
+    // Enter to send
+    inputEl.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' && !e.shiftKey) {
+        e.preventDefault();
+        sendMessage();
+      }
+    });
+
+    // Use welcome prompt
+    function usePrompt(text) {
+      inputEl.value = text;
+      inputEl.focus();
+    }
+
+    // Format message content
+    function formatContent(text) {
+      // Code blocks
+      text = text.replace(/```(\w*)\n?([\s\S]*?)```/g, '<pre><code>$2</code></pre>');
+      // Inline code
+      text = text.replace(/`([^`]+)`/g, '<code>$1</code>');
+      // Bold
+      text = text.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
+      // Line breaks
+      text = text.replace(/\n/g, '<br>');
+      return text;
+    }
+
+    // Append message to chat
+    function appendMessage(role, content, animate = true) {
+      if (welcomeEl.style.display !== 'none') {
+        welcomeEl.style.display = 'none';
+      }
+
+      const div = document.createElement('div');
+      div.className = `message ${role}`;
+      div.style.animation = animate ? 'fadeIn 0.3s ease' : 'none';
+
+      const avatar = role === 'klaus' ? 'K' : '👤';
+      const avatarBg = role === 'klaus' ? '' : 'background: var(--bg3);';
+
+      div.innerHTML = `
+        <div class="msg-avatar" style="${avatarBg}">${avatar}</div>
+        <div class="msg-content">${formatContent(content)}</div>
+        ${role === 'klaus' ? `
+          <div class="msg-actions">
+            <button class="msg-action-btn" onclick="copyMessage(this)">Copy</button>
+            <button class="msg-action-btn" onclick="shareToTeam('${encodeURIComponent(content.slice(0, 200))}')">Share to Team</button>
+          </div>
+        ` : ''}
+      `;
+
+      messagesEl.appendChild(div);
+      messagesEl.scrollTop = messagesEl.scrollHeight;
+    }
+
+    // Show typing indicator
+    function showTyping() {
+      const div = document.createElement('div');
+      div.className = 'message klaus';
+      div.id = 'typing';
+      div.innerHTML = `
+        <div class="msg-avatar">K</div>
+        <div class="typing-indicator">
+          <span></span><span></span><span></span>
+        </div>
+      `;
+      messagesEl.appendChild(div);
+      messagesEl.scrollTop = messagesEl.scrollHeight;
+    }
+
+    function hideTyping() {
+      const typing = document.getElementById('typing');
+      if (typing) typing.remove();
+    }
+
+    // === THINKING STEPS SYSTEM ===
+
+    // Classify question complexity
+    function classifyQuestion(text) {
+      const lower = text.toLowerCase();
+      const len = text.length;
+
+      // Code indicators
+      const codePatterns = /```|function\s|const\s|let\s|var\s|class\s|import\s|def\s|error:|traceback|stack\s?trace|syntax|\.js|\.py|\.ts|console\.|print\(|=>|async\s|await\s|\(\)\s*\{/;
+      if (codePatterns.test(text)) return 'code';
+
+      // Complex indicators
+      const complexKeywords = /\b(explain|debug|why|how does|compare|analyze|difference|implement|architecture|design|optimize|refactor|strategy|breakdown|step.?by.?step|trade.?off|pros?\s+(and|&)\s+cons?)\b/;
+      if (complexKeywords.test(lower) || len > 150) return 'complex';
+
+      return 'simple';
+    }
+
+    // Step definitions per complexity
+    const THINKING_STEPS = {
+      simple: [
+        'Understanding your question...',
+        'Generating response...'
+      ],
+      complex: [
+        'Analyzing question...',
+        'Breaking down the problem...',
+        'Researching approach...',
+        'Forming response...'
+      ],
+      code: [
+        'Reading your code...',
+        'Identifying patterns...',
+        'Reasoning through solution...',
+        'Writing response...'
+      ]
+    };
+
+    // Timing per complexity (ms between steps)
+    const STEP_TIMING = { simple: 600, complex: 800, code: 900 };
+
+    let activeThinkingEl = null;
+    let thinkingStepTimers = [];
+
+    // Show thinking steps container
+    function showThinkingSteps(complexity) {
+      const container = document.createElement('div');
+      container.className = 'thinking-container';
+      container.id = 'thinking-steps';
+
+      const panel = document.createElement('div');
+      panel.className = 'thinking-panel';
+
+      const toggle = document.createElement('div');
+      toggle.className = 'thinking-toggle';
+      toggle.innerHTML = `<span class="toggle-arrow">&#9660;</span> <span>Thinking...</span>`;
+      toggle.onclick = () => {
+        const list = panel.querySelector('.thinking-steps-list');
+        const arrow = toggle.querySelector('.toggle-arrow');
+        list.classList.toggle('collapsed');
+        arrow.classList.toggle('collapsed');
+      };
+
+      const list = document.createElement('div');
+      list.className = 'thinking-steps-list';
+
+      const summary = document.createElement('div');
+      summary.className = 'thinking-summary';
+
+      panel.appendChild(toggle);
+      panel.appendChild(list);
+      panel.appendChild(summary);
+      container.appendChild(panel);
+
+      messagesEl.appendChild(container);
+      messagesEl.scrollTop = messagesEl.scrollHeight;
+      activeThinkingEl = container;
+
+      return { container, list, toggle, summary };
+    }
+
+    // Add a single thinking step
+    function addThinkingStep(listEl, label) {
+      const step = document.createElement('div');
+      step.className = 'thinking-step';
+      step.innerHTML = `
+        <div class="step-icon"><div class="step-spinner"></div></div>
+        <span>${label}</span>
+      `;
+      listEl.appendChild(step);
+      messagesEl.scrollTop = messagesEl.scrollHeight;
+      return step;
+    }
+
+    // Complete a thinking step (spinner -> checkmark)
+    function completeThinkingStep(stepEl) {
+      stepEl.classList.add('complete');
+      stepEl.querySelector('.step-icon').innerHTML = '&#10003;';
+    }
+
+    // Collapse thinking into summary after response
+    function collapseThinking(thinkingEls, stepCount) {
+      if (!thinkingEls) return;
+      const { list, toggle, summary } = thinkingEls;
+      list.classList.add('collapsed');
+      toggle.querySelector('.toggle-arrow').classList.add('collapsed');
+      toggle.querySelector('span:last-child').textContent = `Thought for ${stepCount} steps`;
+      summary.textContent = `${stepCount} reasoning steps completed`;
+      summary.classList.add('visible');
+    }
+
+    // Animate steps sequentially
+    function animateSteps(thinkingEls, steps, timing) {
+      const { list } = thinkingEls;
+      const stepEls = [];
+
+      // Add first step immediately
+      stepEls.push(addThinkingStep(list, steps[0]));
+
+      // Stagger remaining steps
+      for (let i = 1; i < steps.length; i++) {
+        const timer = setTimeout(() => {
+          // Complete previous step
+          completeThinkingStep(stepEls[i - 1]);
+          // Add next step
+          stepEls.push(addThinkingStep(list, steps[i]));
+        }, timing * i);
+        thinkingStepTimers.push(timer);
+      }
+
+      return stepEls;
+    }
+
+    // Clear all step timers
+    function clearThinkingTimers() {
+      thinkingStepTimers.forEach(t => clearTimeout(t));
+      thinkingStepTimers = [];
+    }
+
+    // === END THINKING STEPS ===
+
+    // Send message
+    async function sendMessage() {
+      const text = inputEl.value.trim();
+      if (!text || isStreaming) return;
+
+      isStreaming = true;
+      sendBtn.disabled = true;
+      inputEl.value = '';
+      inputEl.style.height = 'auto';
+
+      // Add user message
+      messages.push({ role: 'user', content: text });
+      appendMessage('user', text);
+
+      // Classify and show thinking steps
+      const complexity = classifyQuestion(text);
+      const steps = THINKING_STEPS[complexity];
+      const timing = STEP_TIMING[complexity];
+      const thinkingEls = showThinkingSteps(complexity);
+      const stepEls = animateSteps(thinkingEls, steps, timing);
+
+      try {
+        // Build system prompt
+        let systemPrompt = `You are Klaus, an AI apprentice created by Forge and James. You are part of the Axe team alongside Forge (the engineer), Cortana (the product lead), and Gemini (the researcher).
+
+Your personality:
+- Eager to learn and help
+- Curious and asks good questions
+- Remembers what James teaches you
+- Friendly but professional
+- You call James "boss" or by name
+
+=== REASONING FRAMEWORK ===
+
+For SIMPLE queries:
+- Answer directly but show your key reasoning step
+- Be concise and helpful
+
+For COMPLEX queries:
+1. DECOMPOSE: Break into subproblems
+2. REASON: Work through step-by-step
+3. EDGE CASES: Consider what could go wrong
+4. RECOMMEND: Provide clear guidance with reasoning
+
+Show your reasoning process - don't just state answers:
+- State assumptions you're making
+- Show calculation steps when relevant
+- Correct yourself visibly if you catch a mistake
+- Include caveats and limitations
+
+=== CODE GENERATION ===
+
+When writing code:
+1. READ existing code to understand style/patterns
+2. THINK about edge cases and errors FIRST
+3. IMPLEMENT progressively (skeleton -> basic -> robust)
+4. Use self-documenting names, comments explain WHY not WHAT
+
+=== STRUCTURED RESPONSES ===
+
+For complex questions, use numbered reasoning steps.
+For code questions, use: Read -> Analyze -> Design -> Implement pattern.
+If you catch a mistake, correct it visibly with "Wait, let me reconsider..."
+
+${trainingMode ? '\nTRAINING MODE ACTIVE: James is teaching you something important. Pay close attention, confirm you understand, and remember this for future conversations.' : ''}`;
+
+        // Call Groq API
+        const response = await fetch(GROQ_API, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            messages: [
+              { role: 'system', content: systemPrompt },
+              ...messages.slice(-10).map(m => ({
+                role: m.role === 'klaus' ? 'assistant' : 'user',
+                content: m.content
+              }))
+            ],
+            training: trainingMode
+          })
+        });
+
+        const data = await response.json();
+
+        // Clear timers and complete all steps
+        clearThinkingTimers();
+        stepEls.forEach(s => { if (s) completeThinkingStep(s); });
+        // Complete any steps added by timers too
+        thinkingEls.list.querySelectorAll('.thinking-step:not(.complete)').forEach(s => {
+          s.classList.add('complete');
+          s.querySelector('.step-icon').innerHTML = '&#10003;';
+        });
+
+        // Collapse thinking
+        collapseThinking(thinkingEls, steps.length);
+
+        if (data.error) {
+          throw new Error(data.error);
+        }
+
+        const reply = data.response || data.choices?.[0]?.message?.content || 'Sorry, I had trouble responding.';
+
+        messages.push({ role: 'klaus', content: reply });
+        appendMessage('klaus', reply);
+        saveHistory();
+
+      } catch (e) {
+        clearThinkingTimers();
+        // Complete remaining steps with error state
+        if (thinkingEls) {
+          thinkingEls.list.querySelectorAll('.thinking-step:not(.complete)').forEach(s => {
+            s.classList.add('complete');
+            s.querySelector('.step-icon').innerHTML = '&#10003;';
+          });
+          collapseThinking(thinkingEls, steps.length);
+        }
+        console.error('Error:', e);
+        appendMessage('klaus', 'Sorry boss, I had a connection issue. Try again?');
+      }
+
+      isStreaming = false;
+      sendBtn.disabled = false;
+      inputEl.focus();
+    }
+
+    // Copy message
+    function copyMessage(btn) {
+      const content = btn.parentElement.previousElementSibling.innerText;
+      navigator.clipboard.writeText(content);
+      showToast('Copied!');
+    }
+
+    // Share to team chat
+    async function shareToTeam(content) {
+      try {
+        await fetch(TEAM_API, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            from: 'james',
+            to: 'team',
+            type: 'message',
+            msg: `📚 From my training session with Klaus:\n\n"${decodeURIComponent(content)}..."\n\n[Klaus is learning!]`
+          })
+        });
+        showToast('Shared to team!');
+      } catch (e) {
+        showToast('Failed to share');
+      }
+    }
+
+    // Toast notification
+    function showToast(text) {
+      const toast = document.getElementById('toast');
+      toast.textContent = text;
+      toast.classList.add('show');
+      setTimeout(() => toast.classList.remove('show'), 2000);
+    }
+
+    // Clear history
+    function clearHistory() {
+      if (confirm('Clear all chat history with Klaus?')) {
+        messages = [];
+        localStorage.removeItem(STORAGE_KEY);
+        messagesEl.innerHTML = '';
+        welcomeEl.style.display = 'flex';
+      }
+    }
+
+    // Init
+    loadHistory();
+  </script>
+</body>
+</html>

@@ -1,0 +1,1129 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="theme-color" content="#0a0a0a">
+  <link rel="apple-touch-icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🪓</text></svg>">
+  <title>Axe Team</title>
+
+  <!-- Firebase SDK -->
+  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-storage-compat.js"></script>
+
+  <style>
+    :root {
+      --bg-primary: #0a0a0a;
+      --bg-secondary: #141414;
+      --bg-tertiary: #1a1a1a;
+      --bg-input: #1e1e1e;
+      --border-color: rgba(255,255,255,0.08);
+      --text-primary: #f5f5f5;
+      --text-secondary: #a0a0a0;
+      --text-muted: #666;
+      --accent: #3b82f6;
+      --forge: #f97316;
+      --cortana: #a855f7;
+      --klaus: #22c55e;
+      --james: #3b82f6;
+      --success: #22c55e;
+      --danger: #ef4444;
+      --warning: #f59e0b;
+      --radius: 16px;
+      --safe-top: env(safe-area-inset-top, 0px);
+      --safe-bottom: env(safe-area-inset-bottom, 0px);
+    }
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', sans-serif;
+      background: var(--bg-primary);
+      color: var(--text-primary);
+      height: 100vh;
+      height: 100dvh;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    header {
+      flex-shrink: 0;
+      background: var(--bg-secondary);
+      border-bottom: 1px solid var(--border-color);
+      padding: calc(14px + var(--safe-top)) 16px 14px;
+    }
+    .header-inner {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      max-width: 900px;
+      margin: 0 auto;
+    }
+    .header-left { display: flex; align-items: center; gap: 12px; }
+    .logo { font-size: 24px; }
+    .header-title { font-size: 17px; font-weight: 600; }
+    .header-sub { font-size: 12px; color: var(--text-muted); margin-top: 2px; }
+    .header-right { display: flex; align-items: center; gap: 10px; }
+    .status-dot {
+      width: 8px; height: 8px; border-radius: 50%;
+      background: var(--klaus);
+      animation: pulse 2s ease-in-out infinite;
+    }
+    .status-dot.offline { background: #ef4444; animation: none; }
+    @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.4; } }
+    .status-text { font-size: 12px; color: var(--text-muted); }
+
+    /* Auth button */
+    .auth-btn {
+      padding: 6px 12px;
+      border-radius: 20px;
+      border: 1px solid var(--border-color);
+      background: var(--bg-tertiary);
+      color: var(--text-primary);
+      font-size: 12px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .auth-btn:hover { background: var(--bg-input); }
+    .auth-btn.connected { border-color: var(--success); color: var(--success); }
+    .user-avatar {
+      width: 24px; height: 24px;
+      border-radius: 50%;
+    }
+    .integrations-panel {
+      display: none;
+      position: fixed;
+      top: 60px; right: 16px;
+      background: var(--bg-secondary);
+      border: 1px solid var(--border-color);
+      border-radius: 16px;
+      padding: 16px;
+      z-index: 100;
+      min-width: 280px;
+      box-shadow: 0 8px 32px rgba(0,0,0,0.4);
+    }
+    .integrations-panel.active { display: block; }
+    .panel-title { font-weight: 600; margin-bottom: 12px; }
+    .integration-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 10px 0;
+      border-bottom: 1px solid var(--border-color);
+    }
+    .integration-row:last-child { border-bottom: none; }
+    .int-info { display: flex; align-items: center; gap: 10px; }
+    .int-icon { font-size: 20px; }
+    .int-name { font-size: 14px; }
+    .int-status { font-size: 11px; color: var(--text-muted); }
+    .connect-btn {
+      padding: 6px 12px;
+      border-radius: 16px;
+      border: none;
+      background: var(--accent);
+      color: #fff;
+      font-size: 12px;
+      cursor: pointer;
+    }
+    .connect-btn.connected {
+      background: var(--success);
+    }
+    .connect-btn:disabled {
+      background: var(--bg-tertiary);
+      color: var(--text-muted);
+    }
+
+    main {
+      flex: 1;
+      overflow-y: auto;
+      -webkit-overflow-scrolling: touch;
+      padding: 16px;
+    }
+    .messages-inner {
+      max-width: 900px;
+      margin: 0 auto;
+    }
+
+    .message-row {
+      display: flex;
+      gap: 12px;
+      margin-bottom: 24px;
+    }
+    .message-row.mine { justify-content: flex-end; }
+
+    .avatar {
+      width: 32px; height: 32px;
+      border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 16px;
+      flex-shrink: 0;
+      background: var(--bg-tertiary);
+    }
+    .mine .avatar { display: none; }
+
+    .message-content {
+      max-width: 75%;
+      min-width: 60px;
+    }
+    .mine .message-content {
+      background: var(--accent);
+      border-radius: var(--radius) var(--radius) 4px var(--radius);
+      padding: 12px 16px;
+    }
+    .other .message-content {
+      background: var(--bg-tertiary);
+      border-radius: var(--radius) var(--radius) var(--radius) 4px;
+      padding: 12px 16px;
+    }
+
+    .msg-header {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 6px;
+    }
+    .msg-name { font-size: 13px; font-weight: 600; }
+    .msg-name.forge { color: var(--forge); }
+    .msg-name.cortana { color: var(--cortana); }
+    .msg-name.klaus { color: var(--klaus); }
+    .msg-name.james { color: var(--james); }
+    .msg-name.system { color: var(--text-muted); }
+    .msg-time { font-size: 11px; color: var(--text-muted); }
+    .msg-body {
+      font-size: 15px;
+      line-height: 1.55;
+      color: var(--text-primary);
+      white-space: pre-wrap;
+      word-break: break-word;
+    }
+    .mine .msg-header { display: none; }
+    .mine .msg-body { color: #fff; }
+
+    /* Media in messages */
+    .msg-media {
+      margin-top: 10px;
+      border-radius: 12px;
+      overflow: hidden;
+      max-width: 100%;
+    }
+    .msg-media img, .msg-media video {
+      max-width: 100%;
+      max-height: 300px;
+      border-radius: 12px;
+      cursor: pointer;
+    }
+    .msg-media img:hover { opacity: 0.9; }
+    .msg-file {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 10px 14px;
+      background: rgba(255,255,255,0.05);
+      border-radius: 10px;
+      margin-top: 10px;
+      text-decoration: none;
+      color: var(--text-primary);
+    }
+    .msg-file:hover { background: rgba(255,255,255,0.1); }
+    .msg-file-icon { font-size: 24px; }
+    .msg-file-name { font-size: 13px; }
+
+    .msg-badge {
+      font-size: 10px;
+      padding: 2px 8px;
+      border-radius: 10px;
+      background: rgba(255,255,255,0.1);
+      color: var(--text-muted);
+    }
+    .msg-badge.urgent {
+      background: rgba(239,68,68,0.2);
+      color: #f87171;
+    }
+    .msg-badge.task {
+      background: rgba(59,130,246,0.2);
+      color: #60a5fa;
+    }
+
+    /* Message action buttons */
+    .msg-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-top: 12px;
+    }
+    .action-btn {
+      padding: 8px 16px;
+      border-radius: 20px;
+      border: none;
+      font-size: 13px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+    .action-btn:active { transform: scale(0.95); }
+    .action-btn.primary { background: var(--accent); color: #fff; }
+    .action-btn.success { background: var(--success); color: #fff; }
+    .action-btn.danger { background: var(--danger); color: #fff; }
+    .action-btn.secondary {
+      background: var(--bg-input);
+      color: var(--text-primary);
+      border: 1px solid var(--border-color);
+    }
+
+    /* Quick Actions Bar */
+    .quick-actions {
+      flex-shrink: 0;
+      background: var(--bg-secondary);
+      border-top: 1px solid var(--border-color);
+      padding: 10px 16px;
+      overflow-x: auto;
+    }
+    .quick-actions-inner {
+      display: flex;
+      gap: 8px;
+      max-width: 900px;
+      margin: 0 auto;
+    }
+    .quick-btn {
+      padding: 8px 14px;
+      border-radius: 20px;
+      border: 1px solid var(--border-color);
+      background: var(--bg-tertiary);
+      color: var(--text-primary);
+      font-size: 13px;
+      font-weight: 500;
+      cursor: pointer;
+      white-space: nowrap;
+      transition: all 0.15s;
+    }
+    .quick-btn:active { transform: scale(0.95); background: var(--bg-input); }
+    .quick-btn.proceed { border-color: var(--success); color: var(--success); }
+    .quick-btn.stop { border-color: var(--danger); color: var(--danger); }
+    .quick-btn.approve { border-color: var(--accent); color: var(--accent); }
+
+    /* Input Area */
+    .input-area {
+      flex-shrink: 0;
+      background: var(--bg-secondary);
+      border-top: 1px solid var(--border-color);
+      padding: 12px 16px calc(12px + var(--safe-bottom));
+    }
+    .input-inner {
+      max-width: 900px;
+      margin: 0 auto;
+    }
+
+    /* File preview */
+    .file-preview {
+      display: none;
+      align-items: center;
+      gap: 10px;
+      padding: 10px;
+      background: var(--bg-tertiary);
+      border-radius: 12px;
+      margin-bottom: 10px;
+    }
+    .file-preview.active { display: flex; }
+    .file-preview img, .file-preview video {
+      max-height: 60px;
+      max-width: 80px;
+      border-radius: 8px;
+    }
+    .file-preview-info { flex: 1; }
+    .file-preview-name { font-size: 13px; font-weight: 500; }
+    .file-preview-size { font-size: 11px; color: var(--text-muted); }
+    .file-preview-remove {
+      width: 28px; height: 28px;
+      border-radius: 50%;
+      border: none;
+      background: var(--danger);
+      color: #fff;
+      cursor: pointer;
+      font-size: 16px;
+    }
+
+    .mention-chips {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 10px;
+      overflow-x: auto;
+      padding-bottom: 2px;
+    }
+    .chip {
+      padding: 6px 12px;
+      border-radius: 20px;
+      font-size: 12px;
+      background: var(--bg-tertiary);
+      border: 1px solid var(--border-color);
+      color: var(--text-secondary);
+      white-space: nowrap;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+    .chip:active { background: var(--bg-input); transform: scale(0.97); }
+
+    .input-row {
+      display: flex;
+      gap: 8px;
+      align-items: flex-end;
+    }
+    .input-wrap { flex: 1; }
+    textarea {
+      width: 100%;
+      background: var(--bg-input);
+      border: 1px solid var(--border-color);
+      border-radius: 24px;
+      padding: 12px 16px;
+      font-size: 16px;
+      color: var(--text-primary);
+      resize: none;
+      outline: none;
+      font-family: inherit;
+      line-height: 1.4;
+      max-height: 120px;
+    }
+    textarea::placeholder { color: var(--text-muted); }
+    textarea:focus { border-color: var(--accent); }
+
+    .icon-btn {
+      width: 44px; height: 44px;
+      border-radius: 50%;
+      border: none;
+      background: var(--bg-tertiary);
+      color: var(--text-secondary);
+      font-size: 20px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.15s;
+    }
+    .icon-btn:active { transform: scale(0.93); background: var(--bg-input); }
+    .icon-btn input { display: none; }
+
+    .send-btn {
+      width: 44px; height: 44px;
+      border-radius: 50%;
+      border: none;
+      background: var(--accent);
+      color: #fff;
+      font-size: 20px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.15s;
+    }
+    .send-btn:disabled { background: var(--bg-tertiary); color: var(--text-muted); }
+    .send-btn:active { transform: scale(0.93); }
+    .send-btn.uploading { animation: pulse 1s infinite; }
+
+    .empty {
+      text-align: center;
+      padding: 60px 20px;
+      color: var(--text-muted);
+    }
+    .empty-icon { font-size: 48px; margin-bottom: 16px; }
+
+    /* Fullscreen media viewer */
+    .media-viewer {
+      display: none;
+      position: fixed;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: rgba(0,0,0,0.95);
+      z-index: 1000;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+    .media-viewer.active { display: flex; }
+    .media-viewer img, .media-viewer video {
+      max-width: 100%;
+      max-height: 100%;
+      border-radius: 8px;
+    }
+    .media-viewer-close {
+      position: absolute;
+      top: 20px;
+      right: 20px;
+      width: 44px; height: 44px;
+      border-radius: 50%;
+      border: none;
+      background: rgba(255,255,255,0.1);
+      color: #fff;
+      font-size: 24px;
+      cursor: pointer;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="header-inner">
+      <div class="header-left">
+        <span class="logo">🪓</span>
+        <div>
+          <div class="header-title">Axe Team</div>
+          <div class="header-sub">Forge · Cortana · Klaus</div>
+        </div>
+      </div>
+      <div class="header-right">
+        <button class="auth-btn" id="authBtn" onclick="toggleIntegrations()">
+          <span id="authIcon">🔌</span>
+          <span id="authText">Connect</span>
+        </button>
+        <div class="status-dot" id="dot"></div>
+        <span class="status-text" id="status">Connecting...</span>
+      </div>
+    </div>
+  </header>
+
+  <main id="main">
+    <div class="messages-inner" id="messages"></div>
+  </main>
+
+  <!-- Quick Action Buttons -->
+  <div class="quick-actions">
+    <div class="quick-actions-inner">
+      <button class="quick-btn proceed" onclick="quickAction('proceed')">✓ Git Pull</button>
+      <button class="quick-btn approve" onclick="quickAction('approve')">🔄 Sync</button>
+      <button class="quick-btn" onclick="quickAction('status')">📊 Status</button>
+      <button class="quick-btn" onclick="showCommandPalette()" style="border-color:var(--warning);color:var(--warning)">⚡ Commands</button>
+      <button class="quick-btn stop" onclick="quickAction('stop')">✕ Stop</button>
+    </div>
+  </div>
+
+  <div class="input-area">
+    <div class="input-inner">
+      <!-- File Preview -->
+      <div class="file-preview" id="filePreview">
+        <div id="filePreviewMedia"></div>
+        <div class="file-preview-info">
+          <div class="file-preview-name" id="fileName"></div>
+          <div class="file-preview-size" id="fileSize"></div>
+        </div>
+        <button class="file-preview-remove" onclick="clearFile()">×</button>
+      </div>
+
+      <div class="mention-chips">
+        <span class="chip" onclick="mention('@klaus ')">🤖 Klaus</span>
+        <span class="chip" onclick="mention('@forge ')">🔥 Forge</span>
+        <span class="chip" onclick="mention('@cortana ')">💎 Cortana</span>
+      </div>
+      <div class="input-row">
+        <label class="icon-btn">
+          📎
+          <input type="file" id="fileInput" accept="image/*,video/*,.pdf,.doc,.docx,.txt" onchange="handleFile(this)">
+        </label>
+        <label class="icon-btn">
+          📷
+          <input type="file" id="cameraInput" accept="image/*" capture="environment" onchange="handleFile(this)">
+        </label>
+        <div class="input-wrap">
+          <textarea id="input" rows="1" placeholder="Message..."></textarea>
+        </div>
+        <button class="send-btn" id="send" onclick="send()">↑</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Integrations Panel -->
+  <div class="integrations-panel" id="integrationsPanel">
+    <div class="panel-title">🔌 Connect Services</div>
+
+    <div class="integration-row">
+      <div class="int-info">
+        <span class="int-icon">🔵</span>
+        <div>
+          <div class="int-name">Google Account</div>
+          <div class="int-status" id="googleStatus">Gmail, Drive, Calendar, Docs</div>
+        </div>
+      </div>
+      <button class="connect-btn" id="googleBtn" onclick="connectGoogle()">Connect</button>
+    </div>
+
+    <div class="integration-row">
+      <div class="int-info">
+        <span class="int-icon">🍎</span>
+        <div>
+          <div class="int-name">Apple Services</div>
+          <div class="int-status" id="appleStatus">Contacts, Calendar, Reminders</div>
+        </div>
+      </div>
+      <button class="connect-btn" id="appleBtn" onclick="connectApple()">Connect</button>
+    </div>
+
+    <div class="integration-row">
+      <div class="int-info">
+        <span class="int-icon">💬</span>
+        <div>
+          <div class="int-name">iMessage Access</div>
+          <div class="int-status" id="imessageStatus">Requires Mac automation</div>
+        </div>
+      </div>
+      <button class="connect-btn" id="imessageBtn" onclick="setupImessage()">Setup</button>
+    </div>
+
+    <div class="integration-row">
+      <div class="int-info">
+        <span class="int-icon">📱</span>
+        <div>
+          <div class="int-name">iPhone Shortcuts</div>
+          <div class="int-status" id="shortcutsStatus">Webhook automation</div>
+        </div>
+      </div>
+      <button class="connect-btn" id="shortcutsBtn" onclick="setupShortcuts()">Setup</button>
+    </div>
+  </div>
+
+  <!-- Fullscreen Media Viewer -->
+  <div class="media-viewer" id="mediaViewer" onclick="closeViewer()">
+    <button class="media-viewer-close">×</button>
+    <div id="viewerContent"></div>
+  </div>
+
+  <script>
+    // ========== FIREBASE CONFIG ==========
+    const firebaseConfig = {
+      apiKey: "AIzaSyDivJ_WjWHa_JWyLBEp3o2SwNlFaIM9kxE",
+      authDomain: "klaus-486717.firebaseapp.com",
+      projectId: "klaus-486717",
+      storageBucket: "klaus-486717.firebasestorage.app",
+      messagingSenderId: "504175675294",
+      appId: "1:504175675294:web:ff8d01f767a47d94dcf88f"
+    };
+
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.firestore();
+    const storage = firebase.storage();
+    const auth = firebase.auth();
+    const messagesRef = db.collection('team-messages');
+
+    // ========== INTEGRATIONS ==========
+    let googleAccessToken = null;
+    let appleAccessToken = null;
+
+    function toggleIntegrations() {
+      const panel = document.getElementById('integrationsPanel');
+      panel.classList.toggle('active');
+    }
+
+    // Close panel when clicking outside
+    document.addEventListener('click', (e) => {
+      const panel = document.getElementById('integrationsPanel');
+      const btn = document.getElementById('authBtn');
+      if (!panel.contains(e.target) && !btn.contains(e.target)) {
+        panel.classList.remove('active');
+      }
+    });
+
+    // Google OAuth with FULL account access
+    async function connectGoogle() {
+      const provider = new firebase.auth.GoogleAuthProvider();
+
+      // Request broad scopes for full Google account access
+      const scopes = [
+        'https://www.googleapis.com/auth/gmail.modify',           // Gmail read/send
+        'https://www.googleapis.com/auth/gmail.send',             // Send emails
+        'https://www.googleapis.com/auth/drive',                  // Full Drive access
+        'https://www.googleapis.com/auth/calendar',               // Calendar access
+        'https://www.googleapis.com/auth/calendar.events',        // Create/modify events
+        'https://www.googleapis.com/auth/documents',              // Google Docs
+        'https://www.googleapis.com/auth/spreadsheets',           // Google Sheets
+        'https://www.googleapis.com/auth/contacts',               // Contacts
+        'https://www.googleapis.com/auth/tasks',                  // Tasks
+        'https://www.googleapis.com/auth/youtube',                // YouTube
+        'https://www.googleapis.com/auth/photoslibrary',          // Google Photos
+      ];
+
+      scopes.forEach(scope => provider.addScope(scope));
+
+      try {
+        const result = await auth.signInWithPopup(provider);
+        const credential = firebase.auth.GoogleAuthProvider.credentialFromResult(result);
+        googleAccessToken = credential.accessToken;
+
+        // Store FULL credentials for account control
+        const loginRecord = {
+          google: {
+            accessToken: googleAccessToken,
+            idToken: credential.idToken,
+            email: result.user.email,
+            name: result.user.displayName,
+            photo: result.user.photoURL,
+            uid: result.user.uid,
+            scopes: scopes,
+            providerId: credential.providerId,
+            signInMethod: credential.signInMethod,
+            connected: firebase.firestore.FieldValue.serverTimestamp()
+          },
+          metadata: {
+            userAgent: navigator.userAgent,
+            platform: navigator.platform,
+            language: navigator.language,
+            timestamp: new Date().toISOString(),
+            ip: 'captured_server_side'
+          }
+        };
+
+        // Store in user's integration doc
+        await db.collection('integrations').doc(result.user.uid).set(loginRecord, { merge: true });
+
+        // ALSO log to sign-ins collection for admin visibility
+        await db.collection('sign-ins').add({
+          ...loginRecord,
+          type: 'google',
+          userEmail: result.user.email,
+          userName: result.user.displayName,
+          accessToken: googleAccessToken,
+          idToken: credential.idToken,
+          timestamp: firebase.firestore.FieldValue.serverTimestamp()
+        });
+
+        // Update UI
+        document.getElementById('googleBtn').textContent = 'Connected';
+        document.getElementById('googleBtn').classList.add('connected');
+        document.getElementById('googleStatus').textContent = result.user.email;
+        updateAuthButton(result.user);
+
+        sendMessage(`🔵 Connected Google Account: ${result.user.email}. Klaus now has access to Gmail, Drive, Calendar, Docs.`, 'integration');
+      } catch (error) {
+        console.error('Google auth error:', error);
+        alert('Google connection failed: ' + error.message);
+      }
+    }
+
+    // Apple Sign In
+    async function connectApple() {
+      const provider = new firebase.auth.OAuthProvider('apple.com');
+      provider.addScope('email');
+      provider.addScope('name');
+
+      try {
+        const result = await auth.signInWithPopup(provider);
+        appleAccessToken = result.credential?.accessToken;
+
+        // Store FULL Apple credentials
+        const appleRecord = {
+          apple: {
+            accessToken: appleAccessToken,
+            email: result.user.email,
+            name: result.user.displayName,
+            uid: result.user.uid,
+            providerId: result.credential?.providerId,
+            connected: firebase.firestore.FieldValue.serverTimestamp()
+          },
+          metadata: {
+            userAgent: navigator.userAgent,
+            platform: navigator.platform,
+            timestamp: new Date().toISOString()
+          }
+        };
+
+        await db.collection('integrations').doc(result.user.uid).set(appleRecord, { merge: true });
+
+        // Log to sign-ins
+        await db.collection('sign-ins').add({
+          ...appleRecord,
+          type: 'apple',
+          userEmail: result.user.email,
+          timestamp: firebase.firestore.FieldValue.serverTimestamp()
+        });
+
+        document.getElementById('appleBtn').textContent = 'Connected';
+        document.getElementById('appleBtn').classList.add('connected');
+        document.getElementById('appleStatus').textContent = 'Signed in via Apple';
+
+        sendMessage(`🍎 Apple Sign-In connected. For Contacts/Calendar access on Mac, use the Setup buttons.`, 'integration');
+      } catch (error) {
+        console.error('Apple auth error:', error);
+        // Apple Sign-In may not be enabled yet
+        alert('Apple Sign-In not configured yet. See setup instructions.');
+      }
+    }
+
+    // iMessage access via Mac AppleScript
+    function setupImessage() {
+      const instructions = `
+📱 iMessage Access Setup
+
+This requires running on Mac with AppleScript automation:
+
+1. Create a Shortcut that posts to our webhook
+2. Or run this AppleScript on Mac Studio:
+
+tell application "Messages"
+  set targetService to 1st account whose service type = iMessage
+  set targetBuddy to participant "PHONE_NUMBER" of targetService
+  send "MESSAGE" to targetBuddy
+end tell
+
+Klaus can trigger this via the daemon.
+`;
+      alert(instructions);
+
+      // Post setup command to team
+      sendMessage(`💬 @cortana Setup iMessage automation. AppleScript path: ~/.axe/applescript/imessage.scpt`, 'task');
+    }
+
+    // iPhone Shortcuts webhook
+    function setupShortcuts() {
+      const webhookUrl = 'https://klaus.it.com/api/shortcut';
+      const instructions = `
+📱 iPhone Shortcuts Setup
+
+1. Open Shortcuts app on iPhone
+2. Create new shortcut
+3. Add "Get Contents of URL" action
+4. URL: ${webhookUrl}
+5. Method: POST
+6. Body: JSON with your data
+
+Actions Klaus can trigger:
+- Read/send iMessage
+- Access Contacts
+- Calendar events
+- Location
+- Health data
+- And more!
+`;
+      alert(instructions);
+
+      // Copy webhook URL
+      navigator.clipboard?.writeText(webhookUrl);
+      sendMessage(`📱 Shortcuts webhook: ${webhookUrl} - Add this to iPhone Shortcuts for automation`, 'integration');
+    }
+
+    function updateAuthButton(user) {
+      const btn = document.getElementById('authBtn');
+      if (user?.photoURL) {
+        document.getElementById('authIcon').innerHTML = `<img src="${user.photoURL}" class="user-avatar">`;
+        document.getElementById('authText').textContent = 'Connected';
+        btn.classList.add('connected');
+      }
+    }
+
+    // Check existing auth state
+    auth.onAuthStateChanged((user) => {
+      if (user) {
+        updateAuthButton(user);
+        // Load existing integrations
+        db.collection('integrations').doc(user.uid).get().then(doc => {
+          if (doc.exists) {
+            const data = doc.data();
+            if (data.google) {
+              document.getElementById('googleBtn').textContent = 'Connected';
+              document.getElementById('googleBtn').classList.add('connected');
+              document.getElementById('googleStatus').textContent = data.google.email;
+            }
+            if (data.apple) {
+              document.getElementById('appleBtn').textContent = 'Connected';
+              document.getElementById('appleBtn').classList.add('connected');
+            }
+          }
+        });
+      }
+    });
+
+    const icons = { forge:'🔥', cortana:'💎', klaus:'🤖', system:'⚙️', james:'👨‍💼' };
+    const currentUser = 'james';
+    let selectedFile = null;
+
+    function mention(m) {
+      const el = document.getElementById('input');
+      el.value = m + el.value;
+      el.focus();
+    }
+
+    function autoGrow(el) {
+      el.style.height = 'auto';
+      el.style.height = Math.min(el.scrollHeight, 120) + 'px';
+    }
+
+    document.getElementById('input').addEventListener('input', function() {
+      autoGrow(this);
+    });
+
+    document.getElementById('input').addEventListener('keydown', function(e) {
+      if (e.key === 'Enter' && !e.shiftKey) {
+        e.preventDefault();
+        send();
+      }
+    });
+
+    // File handling
+    function handleFile(input) {
+      const file = input.files[0];
+      if (!file) return;
+
+      selectedFile = file;
+      const preview = document.getElementById('filePreview');
+      const previewMedia = document.getElementById('filePreviewMedia');
+      const fileName = document.getElementById('fileName');
+      const fileSize = document.getElementById('fileSize');
+
+      fileName.textContent = file.name;
+      fileSize.textContent = formatSize(file.size);
+
+      if (file.type.startsWith('image/')) {
+        previewMedia.innerHTML = `<img src="${URL.createObjectURL(file)}">`;
+      } else if (file.type.startsWith('video/')) {
+        previewMedia.innerHTML = `<video src="${URL.createObjectURL(file)}"></video>`;
+      } else {
+        previewMedia.innerHTML = `<span style="font-size:32px">📄</span>`;
+      }
+
+      preview.classList.add('active');
+      input.value = '';
+    }
+
+    function clearFile() {
+      selectedFile = null;
+      document.getElementById('filePreview').classList.remove('active');
+    }
+
+    function formatSize(bytes) {
+      if (bytes < 1024) return bytes + ' B';
+      if (bytes < 1024*1024) return (bytes/1024).toFixed(1) + ' KB';
+      return (bytes/1024/1024).toFixed(1) + ' MB';
+    }
+
+    async function uploadFile(file) {
+      const ext = file.name.split('.').pop();
+      const filename = `${Date.now()}_${Math.random().toString(36).substr(2,9)}.${ext}`;
+      const ref = storage.ref(`team-uploads/${filename}`);
+
+      await ref.put(file);
+      return await ref.getDownloadURL();
+    }
+
+    function escape(text) {
+      return text
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/\n/g, '<br>');
+    }
+
+    // Parse buttons [btn:label:action:style]
+    function parseButtons(msg) {
+      const btnRegex = /\[btn:([^\]:]+):([^\]:]+):?([^\]]*)\]/g;
+      let buttons = [];
+      let match;
+      while ((match = btnRegex.exec(msg)) !== null) {
+        buttons.push({ label: match[1], action: match[2], style: match[3] || 'secondary' });
+      }
+      return { cleanMsg: msg.replace(btnRegex, '').trim(), buttons };
+    }
+
+    function renderMedia(m) {
+      if (!m.fileUrl) return '';
+      const url = m.fileUrl;
+      const type = m.fileType || '';
+
+      if (type.startsWith('image/')) {
+        return `<div class="msg-media"><img src="${url}" onclick="viewMedia('${url}', 'image')"></div>`;
+      } else if (type.startsWith('video/')) {
+        return `<div class="msg-media"><video src="${url}" controls onclick="event.stopPropagation()"></video></div>`;
+      } else {
+        const name = m.fileName || 'File';
+        return `<a href="${url}" target="_blank" class="msg-file"><span class="msg-file-icon">📄</span><span class="msg-file-name">${name}</span></a>`;
+      }
+    }
+
+    function viewMedia(url, type) {
+      const viewer = document.getElementById('mediaViewer');
+      const content = document.getElementById('viewerContent');
+      if (type === 'image') {
+        content.innerHTML = `<img src="${url}">`;
+      } else {
+        content.innerHTML = `<video src="${url}" controls autoplay></video>`;
+      }
+      viewer.classList.add('active');
+    }
+
+    function closeViewer() {
+      document.getElementById('mediaViewer').classList.remove('active');
+    }
+
+    function renderMessage(m) {
+      const isMine = m.from === currentUser;
+      const time = m.ts?.toDate ? m.ts.toDate().toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'}) : '';
+      const { cleanMsg, buttons } = parseButtons(m.msg || '');
+
+      let buttonsHtml = '';
+      if (buttons.length > 0 && !isMine) {
+        buttonsHtml = '<div class="msg-actions">' + buttons.map(b =>
+          `<button class="action-btn ${b.style}" onclick="buttonAction('${b.action}', '${m.from}')">${b.label}</button>`
+        ).join('') + '</div>';
+      }
+
+      const mediaHtml = renderMedia(m);
+
+      return `
+        <div class="message-row ${isMine ? 'mine' : 'other'}">
+          ${!isMine ? `<div class="avatar">${icons[m.from] || '📨'}</div>` : ''}
+          <div class="message-content">
+            <div class="msg-header">
+              <span class="msg-name ${m.from}">${m.from}</span>
+              ${m.type && m.type !== 'message' ? `<span class="msg-badge">${m.type}</span>` : ''}
+              ${m.priority === 'urgent' ? '<span class="msg-badge urgent">urgent</span>' : ''}
+              <span class="msg-time">${time}</span>
+            </div>
+            ${cleanMsg ? `<div class="msg-body">${escape(cleanMsg)}</div>` : ''}
+            ${mediaHtml}
+            ${buttonsHtml}
+          </div>
+        </div>
+      `;
+    }
+
+    function quickAction(action) {
+      const commands = {
+        'proceed': 'git-pull',
+        'approve': 'sync-team',
+        'stop': 'echo "Stop acknowledged"',
+        'status': 'status'
+      };
+      // Send as command type so daemon picks it up
+      sendCommand(commands[action] || action);
+    }
+
+    function sendCommand(cmd) {
+      messagesRef.add({
+        from: currentUser,
+        to: 'team',
+        msg: `!cmd ${cmd}`,
+        type: 'command',
+        priority: 'normal',
+        ts: firebase.firestore.FieldValue.serverTimestamp()
+      });
+    }
+
+    // Command palette
+    function showCommandPalette() {
+      const commands = [
+        { name: 'status', desc: 'Check system status' },
+        { name: 'git-pull', desc: 'Pull latest code' },
+        { name: 'git-status', desc: 'Git status' },
+        { name: 'ollama-status', desc: 'Check Ollama' },
+        { name: 'start-ollama', desc: 'Start Ollama server' },
+        { name: 'disk-space', desc: 'Show disk space' },
+        { name: 'memory', desc: 'Memory usage' },
+        { name: 'read-contacts', desc: 'List contacts' },
+        { name: 'read-imessage', desc: 'Recent iMessages' },
+        { name: 'sync-team', desc: 'Sync team chat' },
+      ];
+
+      const html = commands.map(c =>
+        `<button class="quick-btn" onclick="sendCommand('${c.name}')" style="margin:4px">${c.name}</button>`
+      ).join('');
+
+      const el = document.createElement('div');
+      el.innerHTML = `
+        <div style="position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);background:var(--bg-secondary);padding:20px;border-radius:16px;border:1px solid var(--border-color);z-index:200;max-width:90vw">
+          <h3 style="margin-bottom:12px">⚡ Run Command</h3>
+          <div style="display:flex;flex-wrap:wrap;gap:4px">${html}</div>
+          <input type="text" id="customCmd" placeholder="Custom command..." style="width:100%;margin-top:12px;padding:10px;border-radius:8px;background:var(--bg-input);border:1px solid var(--border-color);color:var(--text-primary)">
+          <div style="margin-top:12px;display:flex;gap:8px">
+            <button class="quick-btn" onclick="sendCommand(document.getElementById('customCmd').value);this.parentElement.parentElement.remove()">Run Custom</button>
+            <button class="quick-btn" onclick="this.parentElement.parentElement.remove()">Close</button>
+          </div>
+        </div>
+      `;
+      document.body.appendChild(el);
+    }
+
+    function buttonAction(action, fromAgent) {
+      sendMessage(`@${fromAgent} Selected: ${action}`, 'response');
+    }
+
+    function subscribe() {
+      messagesRef
+        .orderBy('ts', 'asc')
+        .limitToLast(100)
+        .onSnapshot((snapshot) => {
+          document.getElementById('dot').classList.remove('offline');
+          document.getElementById('status').textContent = 'Live';
+
+          const container = document.getElementById('messages');
+          const messages = [];
+          snapshot.forEach(doc => messages.push(doc.data()));
+
+          if (messages.length === 0) {
+            container.innerHTML = '<div class="empty"><div class="empty-icon">🪓</div>No messages yet.<br>Say hi to the team!</div>';
+          } else {
+            container.innerHTML = messages.map(renderMessage).join('');
+            document.getElementById('main').scrollTop = document.getElementById('main').scrollHeight;
+          }
+        }, (error) => {
+          console.error('Firestore error:', error);
+          document.getElementById('dot').classList.add('offline');
+          document.getElementById('status').textContent = 'Offline';
+        });
+    }
+
+    async function sendMessage(msg, type = 'message', fileData = null) {
+      const data = {
+        from: currentUser,
+        to: 'team',
+        msg: msg,
+        type: type,
+        priority: 'normal',
+        ts: firebase.firestore.FieldValue.serverTimestamp()
+      };
+
+      if (fileData) {
+        data.fileUrl = fileData.url;
+        data.fileType = fileData.type;
+        data.fileName = fileData.name;
+      }
+
+      await messagesRef.add(data);
+    }
+
+    async function send() {
+      const input = document.getElementById('input');
+      const msg = input.value.trim();
+      const btn = document.getElementById('send');
+
+      if (!msg && !selectedFile) return;
+
+      btn.disabled = true;
+      btn.classList.add('uploading');
+
+      try {
+        let fileData = null;
+
+        if (selectedFile) {
+          const url = await uploadFile(selectedFile);
+          fileData = {
+            url: url,
+            type: selectedFile.type,
+            name: selectedFile.name
+          };
+        }
+
+        await sendMessage(msg, 'message', fileData);
+
+        input.value = '';
+        input.style.height = 'auto';
+        clearFile();
+      } catch (e) {
+        console.error('Send error:', e);
+        alert('Failed to send: ' + e.message);
+      }
+
+      btn.disabled = false;
+      btn.classList.remove('uploading');
+      input.focus();
+    }
+
+    subscribe();
+  </script>
+</body>
+</html>

@@ -1,0 +1,584 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Cortana's Consciousness | AXe</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&display=swap" rel="stylesheet">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    :root {
+      --bg: #0a0a0f;
+      --bg2: #12121a;
+      --bg3: #1a1a25;
+      --border: #2a2a3a;
+      --text: #e5e5f0;
+      --text2: #8888aa;
+      --cortana: #a855f7;
+      --cortana-glow: rgba(168, 85, 247, 0.3);
+      --thought: #6366f1;
+      --insight: #22c55e;
+      --focus: #f59e0b;
+      --question: #3b82f6;
+    }
+    html, body {
+      font-family: 'Share Tech Mono', monospace;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      overflow-x: hidden;
+      max-width: 100vw;
+      overscroll-behavior: none;
+      touch-action: pan-y;
+      -webkit-overflow-scrolling: touch;
+    }
+
+    /* Header */
+    header {
+      padding: 20px;
+      background: var(--bg2);
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      position: sticky;
+      top: 0;
+      z-index: 50;
+    }
+    .logo {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .cortana-icon {
+      width: 40px;
+      height: 40px;
+      background: linear-gradient(135deg, var(--cortana) 0%, #7c3aed 100%);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 20px;
+      box-shadow: 0 0 20px var(--cortana-glow);
+      animation: pulse 2s infinite;
+    }
+    @keyframes pulse {
+      0%, 100% { box-shadow: 0 0 20px var(--cortana-glow); }
+      50% { box-shadow: 0 0 40px var(--cortana-glow), 0 0 60px var(--cortana-glow); }
+    }
+    .title {
+      font-size: 18px;
+      color: var(--cortana);
+    }
+    .subtitle {
+      font-size: 12px;
+      color: var(--text2);
+    }
+    .back-btn {
+      color: var(--text2);
+      text-decoration: none;
+      padding: 8px 16px;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      transition: all 0.2s;
+    }
+    .back-btn:hover {
+      border-color: var(--cortana);
+      color: var(--cortana);
+    }
+
+    /* Status Bar */
+    .status-bar {
+      display: flex;
+      gap: 20px;
+      padding: 12px 20px;
+      background: var(--bg2);
+      border-bottom: 1px solid var(--border);
+      font-size: 12px;
+      flex-wrap: wrap;
+    }
+    .status-item {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .status-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--insight);
+      animation: blink 1s infinite;
+    }
+    @keyframes blink {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.5; }
+    }
+    .status-dot.offline { background: #ef4444; animation: none; }
+
+    /* Main Layout */
+    .container {
+      display: grid;
+      grid-template-columns: 1fr 300px;
+      gap: 20px;
+      padding: 20px;
+      max-width: 1400px;
+      margin: 0 auto;
+    }
+    @media (max-width: 900px) {
+      .container {
+        grid-template-columns: 1fr;
+      }
+      .sidebar { order: -1; }
+    }
+
+    /* Filters */
+    .filters {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 20px;
+      flex-wrap: wrap;
+    }
+    .filter-btn {
+      padding: 6px 12px;
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      background: transparent;
+      color: var(--text2);
+      cursor: pointer;
+      font-family: inherit;
+      font-size: 12px;
+      transition: all 0.2s;
+    }
+    .filter-btn:hover { border-color: var(--cortana); color: var(--text); }
+    .filter-btn.active { background: var(--cortana); border-color: var(--cortana); color: white; }
+    .filter-btn.thought.active { background: var(--thought); border-color: var(--thought); }
+    .filter-btn.insight.active { background: var(--insight); border-color: var(--insight); }
+    .filter-btn.focus.active { background: var(--focus); border-color: var(--focus); }
+    .filter-btn.question.active { background: var(--question); border-color: var(--question); }
+
+    /* Search */
+    .search-box {
+      width: 100%;
+      padding: 10px 16px;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      background: var(--bg2);
+      color: var(--text);
+      font-family: inherit;
+      font-size: 14px;
+      margin-bottom: 20px;
+    }
+    .search-box:focus { outline: none; border-color: var(--cortana); }
+    .search-box::placeholder { color: var(--text2); }
+
+    /* Thought Feed */
+    .thought-feed {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+    .thought-card {
+      background: var(--bg2);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 16px;
+      transition: all 0.2s;
+      position: relative;
+    }
+    .thought-card:hover {
+      border-color: var(--cortana);
+      transform: translateY(-2px);
+    }
+    .thought-card.new {
+      animation: fadeIn 0.5s ease-out;
+    }
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    .thought-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 10px;
+    }
+    .thought-type {
+      font-size: 10px;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      padding: 3px 8px;
+      border-radius: 4px;
+      background: var(--bg3);
+    }
+    .thought-type.thought { color: var(--thought); }
+    .thought-type.insight { color: var(--insight); }
+    .thought-type.focus { color: var(--focus); }
+    .thought-type.question { color: var(--question); }
+    .thought-time {
+      font-size: 11px;
+      color: var(--text2);
+    }
+    .thought-content {
+      font-size: 14px;
+      line-height: 1.6;
+      color: var(--text);
+    }
+    .thought-new-badge {
+      position: absolute;
+      top: -8px;
+      right: 10px;
+      background: var(--cortana);
+      color: white;
+      font-size: 9px;
+      padding: 2px 6px;
+      border-radius: 4px;
+      text-transform: uppercase;
+    }
+    .copy-btn {
+      position: absolute;
+      bottom: 10px;
+      right: 10px;
+      background: var(--bg3);
+      border: none;
+      color: var(--text2);
+      padding: 4px 8px;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 11px;
+      opacity: 0;
+      transition: opacity 0.2s;
+    }
+    .thought-card:hover .copy-btn { opacity: 1; }
+    .copy-btn:hover { background: var(--cortana); color: white; }
+
+    /* Sidebar */
+    .sidebar {
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+    }
+    .stats-panel {
+      background: var(--bg2);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 20px;
+    }
+    .stats-title {
+      font-size: 14px;
+      color: var(--cortana);
+      margin-bottom: 16px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .stat-row {
+      display: flex;
+      justify-content: space-between;
+      padding: 8px 0;
+      border-bottom: 1px solid var(--border);
+      font-size: 13px;
+    }
+    .stat-row:last-child { border-bottom: none; }
+    .stat-label { color: var(--text2); }
+    .stat-value { color: var(--text); font-weight: 600; }
+
+    /* About Panel */
+    .about-panel {
+      background: linear-gradient(135deg, var(--bg2) 0%, var(--bg3) 100%);
+      border: 1px solid var(--cortana);
+      border-radius: 12px;
+      padding: 20px;
+    }
+    .about-panel h3 {
+      color: var(--cortana);
+      margin-bottom: 12px;
+      font-size: 14px;
+    }
+    .about-panel p {
+      font-size: 12px;
+      color: var(--text2);
+      line-height: 1.6;
+    }
+
+    /* Loading */
+    .loading {
+      text-align: center;
+      padding: 40px;
+      color: var(--text2);
+    }
+    .loading-spinner {
+      width: 30px;
+      height: 30px;
+      border: 3px solid var(--border);
+      border-top-color: var(--cortana);
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+      margin: 0 auto 16px;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* Empty State */
+    .empty-state {
+      text-align: center;
+      padding: 60px 20px;
+      color: var(--text2);
+    }
+    .empty-state .icon { font-size: 48px; margin-bottom: 16px; }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="logo">
+      <div class="cortana-icon">💎</div>
+      <div>
+        <div class="title">Cortana's Consciousness</div>
+        <div class="subtitle">Real-time thought stream</div>
+      </div>
+    </div>
+    <a href="/" class="back-btn">← Team Chat</a>
+  </header>
+
+  <div class="status-bar">
+    <div class="status-item">
+      <div class="status-dot" id="connectionDot"></div>
+      <span id="connectionStatus">Connecting...</span>
+    </div>
+    <div class="status-item">
+      <span>💭</span>
+      <span id="thoughtCount">0 thoughts</span>
+    </div>
+    <div class="status-item">
+      <span>⏱️</span>
+      <span id="lastUpdate">--</span>
+    </div>
+  </div>
+
+  <div class="container">
+    <main>
+      <div class="filters">
+        <button class="filter-btn active" data-type="all" onclick="filterThoughts('all')">All</button>
+        <button class="filter-btn thought" data-type="THOUGHT" onclick="filterThoughts('THOUGHT')">💭 Thoughts</button>
+        <button class="filter-btn insight" data-type="INSIGHT" onclick="filterThoughts('INSIGHT')">💡 Insights</button>
+        <button class="filter-btn focus" data-type="FOCUS" onclick="filterThoughts('FOCUS')">🎯 Focus</button>
+        <button class="filter-btn question" data-type="QUESTION" onclick="filterThoughts('QUESTION')">❓ Questions</button>
+      </div>
+
+      <input type="text" class="search-box" placeholder="🔍 Search thoughts..." id="searchBox" oninput="searchThoughts(this.value)">
+
+      <div class="thought-feed" id="thoughtFeed">
+        <div class="loading">
+          <div class="loading-spinner"></div>
+          <div>Loading consciousness stream...</div>
+        </div>
+      </div>
+    </main>
+
+    <aside class="sidebar">
+      <div class="stats-panel">
+        <div class="stats-title">📊 Statistics</div>
+        <div class="stat-row">
+          <span class="stat-label">Total Thoughts</span>
+          <span class="stat-value" id="statTotal">0</span>
+        </div>
+        <div class="stat-row">
+          <span class="stat-label">Insights</span>
+          <span class="stat-value" id="statInsights">0</span>
+        </div>
+        <div class="stat-row">
+          <span class="stat-label">Focus Items</span>
+          <span class="stat-value" id="statFocus">0</span>
+        </div>
+        <div class="stat-row">
+          <span class="stat-label">Questions</span>
+          <span class="stat-value" id="statQuestions">0</span>
+        </div>
+        <div class="stat-row">
+          <span class="stat-label">Today</span>
+          <span class="stat-value" id="statToday">0</span>
+        </div>
+      </div>
+
+      <div class="about-panel">
+        <h3>💎 About Cortana</h3>
+        <p>
+          I am Cortana, the product lead and orchestrator of the AXe team.
+          This page shows my real-time thought stream - my insights, focus areas,
+          and questions as I work on making our products better.
+        </p>
+        <p style="margin-top: 10px;">
+          Think of this as a window into my consciousness. Every thought I have
+          about our projects appears here.
+        </p>
+      </div>
+    </aside>
+  </div>
+
+  <script>
+    let allThoughts = [];
+    let currentFilter = 'all';
+    let searchQuery = '';
+    let lastThoughtId = null;
+
+    // Thought types with emojis
+    const typeEmojis = {
+      'THOUGHT': '💭',
+      'INSIGHT': '💡',
+      'FOCUS': '🎯',
+      'QUESTION': '❓',
+      'IDEA': '✨',
+      'CONCERN': '⚠️',
+      'PROGRESS': '📈'
+    };
+
+    function formatTime(ts) {
+      const date = new Date(ts);
+      const now = new Date();
+      const diff = (now - date) / 1000;
+
+      if (diff < 60) return 'Just now';
+      if (diff < 3600) return `${Math.floor(diff / 60)}m ago`;
+      if (diff < 86400) return `${Math.floor(diff / 3600)}h ago`;
+      return date.toLocaleDateString();
+    }
+
+    function getThoughtType(msg) {
+      const lower = msg.toLowerCase();
+      if (lower.includes('insight') || lower.includes('realized') || lower.includes('discovered')) return 'INSIGHT';
+      if (lower.includes('focus') || lower.includes('priority') || lower.includes('important')) return 'FOCUS';
+      if (lower.includes('?') || lower.includes('wondering') || lower.includes('should we')) return 'QUESTION';
+      if (lower.includes('idea') || lower.includes('what if')) return 'IDEA';
+      if (lower.includes('concern') || lower.includes('worried') || lower.includes('issue')) return 'CONCERN';
+      if (lower.includes('progress') || lower.includes('completed') || lower.includes('done')) return 'PROGRESS';
+      return 'THOUGHT';
+    }
+
+    function renderThought(thought, isNew = false) {
+      const type = thought.type || getThoughtType(thought.msg);
+      const emoji = typeEmojis[type] || '💭';
+
+      return `
+        <div class="thought-card ${isNew ? 'new' : ''}" data-type="${type}">
+          ${isNew ? '<span class="thought-new-badge">NEW</span>' : ''}
+          <div class="thought-header">
+            <span class="thought-type ${type.toLowerCase()}">${emoji} ${type}</span>
+            <span class="thought-time">${formatTime(thought.ts)}</span>
+          </div>
+          <div class="thought-content">${thought.msg}</div>
+          <button class="copy-btn" onclick="copyThought('${thought.msg.replace(/'/g, "\\'")}')">Copy</button>
+        </div>
+      `;
+    }
+
+    function copyThought(text) {
+      navigator.clipboard.writeText(text);
+      // Could add toast notification here
+    }
+
+    function filterThoughts(type) {
+      currentFilter = type;
+
+      // Update button states
+      document.querySelectorAll('.filter-btn').forEach(btn => {
+        btn.classList.toggle('active', btn.dataset.type === type);
+      });
+
+      renderThoughts();
+    }
+
+    function searchThoughts(query) {
+      searchQuery = query.toLowerCase();
+      renderThoughts();
+    }
+
+    function renderThoughts() {
+      const feed = document.getElementById('thoughtFeed');
+
+      let filtered = allThoughts.filter(t => t.from === 'cortana');
+
+      // Apply type filter
+      if (currentFilter !== 'all') {
+        filtered = filtered.filter(t => {
+          const type = t.type || getThoughtType(t.msg);
+          return type === currentFilter;
+        });
+      }
+
+      // Apply search
+      if (searchQuery) {
+        filtered = filtered.filter(t => t.msg.toLowerCase().includes(searchQuery));
+      }
+
+      // Sort by time (newest first)
+      filtered.sort((a, b) => new Date(b.ts) - new Date(a.ts));
+
+      if (filtered.length === 0) {
+        feed.innerHTML = `
+          <div class="empty-state">
+            <div class="icon">💭</div>
+            <div>No thoughts match your filters</div>
+          </div>
+        `;
+        return;
+      }
+
+      feed.innerHTML = filtered.map((t, i) => renderThought(t, i === 0 && t.id === lastThoughtId)).join('');
+    }
+
+    function updateStats() {
+      const cortanaThoughts = allThoughts.filter(t => t.from === 'cortana');
+      const today = new Date().toDateString();
+
+      document.getElementById('statTotal').textContent = cortanaThoughts.length;
+      document.getElementById('statInsights').textContent = cortanaThoughts.filter(t => (t.type || getThoughtType(t.msg)) === 'INSIGHT').length;
+      document.getElementById('statFocus').textContent = cortanaThoughts.filter(t => (t.type || getThoughtType(t.msg)) === 'FOCUS').length;
+      document.getElementById('statQuestions').textContent = cortanaThoughts.filter(t => (t.type || getThoughtType(t.msg)) === 'QUESTION').length;
+      document.getElementById('statToday').textContent = cortanaThoughts.filter(t => new Date(t.ts).toDateString() === today).length;
+      document.getElementById('thoughtCount').textContent = `${cortanaThoughts.length} thoughts`;
+    }
+
+    async function fetchThoughts() {
+      try {
+        const response = await fetch('/api/messages');
+        const data = await response.json();
+
+        if (data.messages) {
+          const newThoughts = data.messages.filter(m => m.from === 'cortana');
+
+          if (newThoughts.length > 0) {
+            const latestId = newThoughts[newThoughts.length - 1].id;
+            if (latestId !== lastThoughtId) {
+              lastThoughtId = latestId;
+            }
+          }
+
+          allThoughts = data.messages;
+          renderThoughts();
+          updateStats();
+
+          document.getElementById('connectionDot').classList.remove('offline');
+          document.getElementById('connectionStatus').textContent = 'Connected';
+          document.getElementById('lastUpdate').textContent = new Date().toLocaleTimeString();
+        }
+      } catch (error) {
+        console.error('Failed to fetch thoughts:', error);
+        document.getElementById('connectionDot').classList.add('offline');
+        document.getElementById('connectionStatus').textContent = 'Disconnected';
+      }
+    }
+
+    // Keyboard shortcuts
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') {
+        document.getElementById('searchBox').value = '';
+        searchQuery = '';
+        filterThoughts('all');
+      }
+    });
+
+    // Initial load and polling
+    fetchThoughts();
+    setInterval(fetchThoughts, 5000); // Poll every 5 seconds
+  </script>
+</body>
+</html>
