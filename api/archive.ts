@@ -37,7 +37,13 @@ function extractDate(doc: FirebaseFirestore.DocumentSnapshot): Date {
   if (typeof data.ts === 'string') {
     const fixed = data.ts.replace(/T(\d{2})-(\d{2})-(\d{2})/, 'T$1:$2:$3');
     const d = new Date(fixed);
-    if (!isNaN(d.getTime())) return d;
+    if (!isNaN(d.getTime())) {
+      const now = new Date();
+      if (d.getTime() > now.getTime() + 5 * 60 * 1000) {
+        return now;
+      }
+      return d;
+    }
   }
 
   if (typeof data.ts === 'number') return new Date(data.ts);

@@ -39,7 +39,15 @@ function extractDate(doc: FirebaseFirestore.DocumentSnapshot): Date {
     // Convert daemon format: 2026-02-09T01-10-00Z → 2026-02-09T01:10:00Z
     const fixed = data.ts.replace(/T(\d{2})-(\d{2})-(\d{2})/, 'T$1:$2:$3');
     const d = new Date(fixed);
-    if (!isNaN(d.getTime())) return d;
+    if (!isNaN(d.getTime())) {
+      // Cap future-dated string timestamps at current time
+      // (daemon wrote local time as UTC, creating future dates)
+      const now = new Date();
+      if (d.getTime() > now.getTime() + 5 * 60 * 1000) {
+        return now;
+      }
+      return d;
+    }
   }
 
   // Numeric timestamp
