@@ -491,6 +491,184 @@
     .toast.show {
       transform: translateX(-50%) translateY(0);
     }
+
+    /* ===== MOBILE RESPONSIVE ===== */
+    @media (max-width: 600px) {
+      header {
+        padding: 10px 12px;
+      }
+      .back-btn {
+        width: 32px;
+        height: 32px;
+        font-size: 16px;
+      }
+      .klaus-avatar {
+        width: 34px;
+        height: 34px;
+        border-radius: 10px;
+        font-size: 16px;
+      }
+      .klaus-info h1 {
+        font-size: 14px;
+      }
+      .klaus-status {
+        font-size: 11px;
+      }
+      .training-toggle {
+        padding: 6px 10px;
+        font-size: 11px;
+      }
+      .toggle-switch {
+        width: 28px;
+        height: 16px;
+      }
+      .toggle-switch::after {
+        width: 12px;
+        height: 12px;
+      }
+      .training-toggle.active .toggle-switch::after {
+        left: 14px;
+      }
+
+      .chat-container {
+        padding: 0 10px;
+      }
+      #messages {
+        padding: 12px 0;
+        gap: 12px;
+      }
+
+      .msg-avatar {
+        width: 28px;
+        height: 28px;
+        font-size: 12px;
+        border-radius: 8px;
+      }
+      .msg-content {
+        max-width: 82%;
+        padding: 10px 12px;
+        font-size: 13px;
+        border-radius: 14px;
+        overflow-wrap: break-word;
+        word-break: break-word;
+      }
+      .message.klaus .msg-content {
+        border-radius: 14px 14px 14px 4px;
+      }
+      .message.user .msg-content {
+        border-radius: 14px 14px 4px 14px;
+      }
+      .msg-content pre {
+        font-size: 11px;
+        padding: 8px;
+      }
+      .msg-content code {
+        font-size: 11px;
+      }
+
+      /* Thinking steps mobile */
+      .thinking-panel {
+        max-width: 85%;
+        margin-left: 36px;
+        padding: 6px 0 6px 10px;
+      }
+      .thinking-step {
+        font-size: 12px;
+        gap: 6px;
+        padding: 3px 0;
+      }
+      .thinking-toggle {
+        font-size: 11px;
+      }
+
+      /* Input area mobile */
+      .input-area {
+        padding: 10px 12px;
+        padding-bottom: calc(10px + var(--safe-bottom));
+      }
+      .input-container {
+        gap: 8px;
+      }
+      #chatInput {
+        padding: 12px 14px;
+        font-size: 14px;
+        border-radius: 20px;
+        min-height: 44px;
+      }
+      #sendBtn {
+        width: 44px;
+        height: 44px;
+        font-size: 18px;
+      }
+
+      /* Welcome screen mobile */
+      .welcome {
+        padding: 24px 16px;
+      }
+      .welcome-avatar {
+        width: 64px;
+        height: 64px;
+        font-size: 28px;
+        border-radius: 20px;
+        margin-bottom: 16px;
+      }
+      .welcome h2 {
+        font-size: 20px;
+      }
+      .welcome p {
+        font-size: 13px;
+        margin-bottom: 16px;
+      }
+      .welcome-prompts {
+        gap: 6px;
+      }
+      .welcome-prompt {
+        padding: 8px 12px;
+        font-size: 12px;
+      }
+
+      /* Message actions - always visible on mobile (no hover) */
+      .msg-actions {
+        opacity: 1;
+      }
+      .msg-action-btn {
+        font-size: 10px;
+        padding: 3px 8px;
+      }
+
+      /* Training banner mobile */
+      .training-banner {
+        padding: 6px 12px;
+        font-size: 11px;
+      }
+
+      /* Toast mobile */
+      .toast {
+        bottom: 80px;
+        font-size: 13px;
+        padding: 10px 20px;
+      }
+    }
+
+    /* Touch feedback */
+    @media (hover: none) {
+      button:active, .welcome-prompt:active, .msg-action-btn:active {
+        transform: scale(0.97);
+        transition: transform 0.05s;
+      }
+      #sendBtn:active:not(:disabled) {
+        transform: scale(0.95);
+      }
+    }
+
+    /* Reduced motion */
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+      }
+    }
   </style>
 </head>
 <body>
