@@ -26,6 +26,36 @@ function getDb() {
 // Merge window: if same agent sends again within this many seconds, append to previous message
 const MERGE_WINDOW_SECONDS = 60;
 
+// Extract a Date from various ts formats (Firestore Timestamp, string, or document ID)
+function extractDate(doc: FirebaseFirestore.DocumentSnapshot): Date {
+  const data = doc.data();
+  if (!data) return new Date(0);
+
+  // Firestore Timestamp
+  if (data.ts?.toDate) return data.ts.toDate();
+
+  // String timestamp (ISO or daemon format like "2026-02-09T01-10-00Z")
+  if (typeof data.ts === 'string') {
+    // Convert daemon format: 2026-02-09T01-10-00Z → 2026-02-09T01:10:00Z
+    const fixed = data.ts.replace(/T(\d{2})-(\d{2})-(\d{2})/, 'T$1:$2:$3');
+    const d = new Date(fixed);
+    if (!isNaN(d.getTime())) return d;
+  }
+
+  // Numeric timestamp
+  if (typeof data.ts === 'number') return new Date(data.ts);
+
+  // Fallback: extract from document ID (format: 2026-02-09T01-10-00Z_agent)
+  const idMatch = doc.id.match(/^(\d{4}-\d{2}-\d{2}T[\d-]+Z)/);
+  if (idMatch) {
+    const fixed = idMatch[1].replace(/T(\d{2})-(\d{2})-(\d{2})/, 'T$1:$2:$3');
+    const d = new Date(fixed);
+    if (!isNaN(d.getTime())) return d;
+  }
+
+  return new Date(0);
+}
+
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   // CORS
   res.setHeader('Access-Control-Allow-Origin', '*');
@@ -40,22 +70,31 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     const firestore = getDb();
 
     if (req.method === 'GET') {
-      // Get recent messages - fetch more than needed so merging still yields ~100
+      // Get all messages (collection kept small by compaction, ~100 docs)
+      // Don't use orderBy('ts') — daemon writes string ts, API writes Timestamp ts,
+      // Firestore separates by type and breaks ordering across both sources
       const snapshot = await firestore
         .collection('team-messages')
-        .orderBy('ts', 'asc')
-        .limitToLast(300)
         .get();
 
-      const raw = snapshot.docs.map(doc => {
+      // Sort in JS using our universal timestamp extractor
+      const sortedDocs = snapshot.docs.sort((a, b) =>
+        extractDate(a).getTime() - extractDate(b).getTime()
+      );
+
+      // Take last 300 for merge processing
+      const recentDocs = sortedDocs.slice(-300);
+
+      const raw = recentDocs.map(doc => {
         const data = doc.data();
+        const ts = extractDate(doc);
         return {
           id: doc.id,
           from: data.from || 'unknown',
           msg: data.msg || '',
           to: data.to || 'team',
           type: data.type || 'message',
-          ts: data.ts?.toDate?.() || null
+          ts: ts.getTime() > 0 ? ts : null
         };
       });
 
@@ -94,30 +133,37 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       const msgText = msg || '';
       const msgType = type || 'message';
 
-      // Check if the last message is from the same agent within the merge window
-      // If so, append to it instead of creating a new message (prevents spam)
+      // Check recent messages for merge — get all and find the latest by timestamp
+      // (avoids orderBy('ts') which breaks with mixed Timestamp/string types)
       const recentSnap = await firestore
         .collection('team-messages')
-        .orderBy('ts', 'desc')
-        .limit(1)
         .get();
 
-      if (!recentSnap.empty) {
-        const lastDoc = recentSnap.docs[0];
-        const lastData = lastDoc.data();
-        const lastTs = lastData.ts?.toDate?.();
+      let lastDoc: FirebaseFirestore.DocumentSnapshot | null = null;
+      let lastTime = 0;
+      for (const doc of recentSnap.docs) {
+        const t = extractDate(doc).getTime();
+        if (t > lastTime) {
+          lastTime = t;
+          lastDoc = doc;
+        }
+      }
+
+      if (lastDoc) {
+        const lastData = lastDoc.data()!;
+        const lastTs = extractDate(lastDoc);
         const now = new Date();
 
         const sameAgent = lastData.from === sender;
-        const withinWindow = lastTs && (now.getTime() - lastTs.getTime()) < MERGE_WINDOW_SECONDS * 1000;
+        const withinWindow = lastTime > 0 && (now.getTime() - lastTs.getTime()) < MERGE_WINDOW_SECONDS * 1000;
         // Only merge regular messages/thoughts, not system types like task_added
         const mergeable = !['task_added', 'task', 'solving_mode', 'bash_request'].includes(msgType)
                        && !['task_added', 'task', 'solving_mode', 'bash_request'].includes(lastData.type || '');
 
         if (sameAgent && withinWindow && mergeable) {
           // Append to existing message
-          const merged = (lastData.msg || '') + '\n\n' + msgText;
-          await lastDoc.ref.update({ msg: merged, ts: Timestamp.now() });
+          const mergedMsg = (lastData.msg || '') + '\n\n' + msgText;
+          await lastDoc.ref.update({ msg: mergedMsg, ts: Timestamp.now() });
           return res.status(200).json({ success: true, id: lastDoc.id, merged: true });
         }
       }

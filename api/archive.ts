@@ -23,9 +23,34 @@ function getDb() {
   return db;
 }
 
-// ELON MODE: Smart Archive System
+// Smart Archive System
 // - GET: Fetch archived messages (paginated)
 // - POST: Trigger archive compaction (moves old messages to archive)
+
+// Extract a Date from various ts formats (Firestore Timestamp, string, or document ID)
+function extractDate(doc: FirebaseFirestore.DocumentSnapshot): Date {
+  const data = doc.data();
+  if (!data) return new Date(0);
+
+  if (data.ts?.toDate) return data.ts.toDate();
+
+  if (typeof data.ts === 'string') {
+    const fixed = data.ts.replace(/T(\d{2})-(\d{2})-(\d{2})/, 'T$1:$2:$3');
+    const d = new Date(fixed);
+    if (!isNaN(d.getTime())) return d;
+  }
+
+  if (typeof data.ts === 'number') return new Date(data.ts);
+
+  const idMatch = doc.id.match(/^(\d{4}-\d{2}-\d{2}T[\d-]+Z)/);
+  if (idMatch) {
+    const fixed = idMatch[1].replace(/T(\d{2})-(\d{2})-(\d{2})/, 'T$1:$2:$3');
+    const d = new Date(fixed);
+    if (!isNaN(d.getTime())) return d;
+  }
+
+  return new Date(0);
+}
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   // CORS
@@ -45,31 +70,33 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       // Query params: ?page=0&limit=50 (default: page 0, limit 50)
       const page = parseInt(req.query.page as string) || 0;
       const limit = Math.min(parseInt(req.query.limit as string) || 50, 200);
-      const offset = page * limit;
 
+      // Get all archived messages, sort in JS (handles mixed ts types)
       const snapshot = await firestore
         .collection('team-messages-archive')
-        .orderBy('ts', 'desc')
-        .offset(offset)
-        .limit(limit)
         .get();
 
-      const messages = snapshot.docs.map(doc => {
+      const allDocs = snapshot.docs.sort((a, b) =>
+        extractDate(b).getTime() - extractDate(a).getTime() // desc for pagination
+      );
+
+      const total = allDocs.length;
+      const offset = page * limit;
+      const pageDocs = allDocs.slice(offset, offset + limit);
+
+      const messages = pageDocs.map(doc => {
         const data = doc.data();
+        const ts = extractDate(doc);
         return {
           id: doc.id,
           from: data.from || 'unknown',
           msg: data.msg || '',
           to: data.to || 'team',
           type: data.type || 'message',
-          ts: data.ts?.toDate?.()?.toISOString() || null,
+          ts: ts.getTime() > 0 ? ts.toISOString() : null,
           archived: true
         };
       });
-
-      // Get total count for pagination
-      const countSnap = await firestore.collection('team-messages-archive').count().get();
-      const total = countSnap.data().count;
 
       return res.status(200).json({
         messages: messages.reverse(), // Return in chronological order
@@ -85,9 +112,12 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       // Keep latest 100 in main collection, archive the rest
       const KEEP_LIVE = 100;
 
-      // Get total count
-      const countSnap = await firestore.collection('team-messages').count().get();
-      const totalMessages = countSnap.data().count;
+      // Get all messages, sort by timestamp in JS (handles mixed ts types)
+      const allSnapshot = await firestore
+        .collection('team-messages')
+        .get();
+
+      const totalMessages = allSnapshot.docs.length;
 
       if (totalMessages <= KEEP_LIVE) {
         return res.status(200).json({
@@ -97,24 +127,21 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         });
       }
 
-      // Calculate how many to archive (cap at 200 per call to stay within batch limits)
-      const toArchive = Math.min(totalMessages - KEEP_LIVE, 200);
+      // Sort oldest first
+      const sortedDocs = allSnapshot.docs.sort((a, b) =>
+        extractDate(a).getTime() - extractDate(b).getTime()
+      );
 
-      // Get oldest messages to archive
-      const oldestSnapshot = await firestore
-        .collection('team-messages')
-        .orderBy('ts', 'asc')
-        .limit(toArchive)
-        .get();
+      // Archive the oldest, keep the newest KEEP_LIVE
+      const toArchiveCount = Math.min(totalMessages - KEEP_LIVE, 200);
+      const docsToArchive = sortedDocs.slice(0, toArchiveCount);
 
       // Batch write to archive and delete from main
-      // Firestore batch limit is 500 ops, we do 2 per doc (set + delete) = max 250 docs
       let archivedCount = 0;
       const BATCH_SIZE = 250;
-      const docs = oldestSnapshot.docs;
 
-      for (let i = 0; i < docs.length; i += BATCH_SIZE) {
-        const chunk = docs.slice(i, i + BATCH_SIZE);
+      for (let i = 0; i < docsToArchive.length; i += BATCH_SIZE) {
+        const chunk = docsToArchive.slice(i, i + BATCH_SIZE);
         const batch = firestore.batch();
 
         for (const doc of chunk) {

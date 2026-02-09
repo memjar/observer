@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="theme-color" content="#0d0d0d">
-  <title>Klaus - Training Mode</title>
+  <title>Klaus - AI Workspace</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
   <style>
@@ -18,6 +18,8 @@
       --klaus: #e8a86d;
       --klaus-glow: rgba(232, 168, 109, 0.2);
       --green: #22c55e;
+      --red: #ef4444;
+      --blue: #3b82f6;
       --border: #333;
       --safe-bottom: env(safe-area-inset-bottom, 20px);
     }
@@ -26,21 +28,21 @@
       font-family: 'Inter', -apple-system, sans-serif;
       background: var(--bg);
       color: var(--text);
-      min-height: 100vh;
+      height: 100vh;
       display: flex;
       flex-direction: column;
+      overflow: hidden;
     }
 
-    /* Header */
+    /* ===== HEADER ===== */
     header {
       display: flex;
       align-items: center;
       justify-content: space-between;
-      padding: 12px 16px;
+      padding: 10px 16px;
       background: var(--bg);
       border-bottom: 1px solid var(--border);
-      position: sticky;
-      top: 0;
+      flex-shrink: 0;
       z-index: 100;
     }
     .header-left {
@@ -62,50 +64,73 @@
       justify-content: center;
     }
     .klaus-avatar {
-      width: 40px;
-      height: 40px;
-      border-radius: 12px;
+      width: 36px;
+      height: 36px;
+      border-radius: 10px;
       background: var(--klaus);
       display: flex;
       align-items: center;
       justify-content: center;
       font-weight: 700;
-      font-size: 18px;
+      font-size: 16px;
       color: #000;
     }
     .klaus-info h1 {
-      font-size: 16px;
+      font-size: 15px;
       font-weight: 600;
     }
     .klaus-status {
-      font-size: 12px;
-      color: var(--green);
+      font-size: 11px;
+      color: var(--text-dim);
       display: flex;
       align-items: center;
       gap: 4px;
     }
-    .klaus-status::before {
-      content: '';
+    .klaus-status .status-dot {
       width: 6px;
       height: 6px;
       border-radius: 50%;
-      background: var(--green);
+      background: var(--text-dim);
     }
-
-    /* Training Mode Toggle */
+    .klaus-status .status-dot.online { background: var(--green); }
+    .klaus-status .status-dot.offline { background: var(--red); }
     .header-right {
       display: flex;
       align-items: center;
-      gap: 12px;
+      gap: 8px;
     }
+    .model-badge {
+      padding: 4px 10px;
+      border-radius: 12px;
+      font-size: 11px;
+      font-weight: 600;
+      border: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .model-badge:hover { border-color: var(--klaus); }
+    .model-badge .badge-dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+    }
+    .model-badge.ollama { color: var(--green); }
+    .model-badge.ollama .badge-dot { background: var(--green); }
+    .model-badge.groq { color: var(--blue); }
+    .model-badge.groq .badge-dot { background: var(--blue); }
+    .model-badge.offline { color: var(--red); }
+    .model-badge.offline .badge-dot { background: var(--red); }
     .training-toggle {
       display: flex;
       align-items: center;
-      gap: 8px;
-      padding: 8px 12px;
+      gap: 6px;
+      padding: 6px 10px;
       background: var(--bg2);
-      border-radius: 20px;
-      font-size: 12px;
+      border-radius: 16px;
+      font-size: 11px;
       cursor: pointer;
       transition: all 0.2s;
     }
@@ -113,22 +138,20 @@
       background: var(--klaus-glow);
       border: 1px solid var(--klaus);
     }
-    .training-toggle input {
-      display: none;
-    }
+    .training-toggle input { display: none; }
     .toggle-switch {
-      width: 32px;
-      height: 18px;
+      width: 28px;
+      height: 16px;
       background: var(--bg3);
-      border-radius: 9px;
+      border-radius: 8px;
       position: relative;
       transition: all 0.2s;
     }
     .toggle-switch::after {
       content: '';
       position: absolute;
-      width: 14px;
-      height: 14px;
+      width: 12px;
+      height: 12px;
       background: var(--text);
       border-radius: 50%;
       top: 2px;
@@ -139,49 +162,361 @@
       background: var(--klaus);
     }
     .training-toggle.active .toggle-switch::after {
-      left: 16px;
+      left: 14px;
     }
 
-    /* Chat Container */
-    .chat-container {
+    /* ===== TRAINING BANNER ===== */
+    .training-banner {
+      background: linear-gradient(90deg, var(--klaus-glow), transparent);
+      padding: 6px 16px;
+      font-size: 11px;
+      color: var(--klaus);
+      display: none;
+      align-items: center;
+      gap: 8px;
+      flex-shrink: 0;
+    }
+    .training-banner.active { display: flex; }
+
+    /* ===== MOBILE TABS ===== */
+    .mobile-tabs {
+      display: none;
+      border-bottom: 1px solid var(--border);
+      background: var(--bg);
+      flex-shrink: 0;
+    }
+    .mobile-tabs-inner {
+      display: flex;
+      gap: 0;
+    }
+    .mobile-tab {
+      flex: 1;
+      padding: 10px 0;
+      text-align: center;
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--text-dim);
+      cursor: pointer;
+      border-bottom: 2px solid transparent;
+      transition: all 0.2s;
+    }
+    .mobile-tab.active {
+      color: var(--klaus);
+      border-bottom-color: var(--klaus);
+    }
+
+    /* ===== MAIN LAYOUT ===== */
+    .main-layout {
+      display: flex;
+      flex: 1;
+      overflow: hidden;
+    }
+
+    /* ===== SIDEBAR ===== */
+    .sidebar {
+      width: 300px;
+      border-right: 1px solid var(--border);
+      overflow-y: auto;
+      flex-shrink: 0;
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+    }
+    .sidebar-section h3 {
+      font-size: 12px;
+      font-weight: 700;
+      color: var(--text-dim);
+      text-transform: uppercase;
+      letter-spacing: 0.8px;
+      margin-bottom: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    /* Model Connection Card */
+    .model-card {
+      background: var(--bg2);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 14px;
+    }
+    .model-card-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 10px;
+    }
+    .model-card-header span {
+      font-size: 13px;
+      font-weight: 600;
+    }
+    .model-card-status {
+      font-size: 11px;
+      padding: 3px 8px;
+      border-radius: 8px;
+      font-weight: 600;
+    }
+    .model-card-status.online { color: var(--green); background: rgba(34,197,94,0.1); }
+    .model-card-status.offline { color: var(--red); background: rgba(239,68,68,0.1); }
+    .model-card-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 6px 0;
+      font-size: 12px;
+      color: var(--text-dim);
+    }
+    .model-card-row span:last-child { color: var(--text); font-weight: 500; }
+    .model-pref-btn {
+      width: 100%;
+      margin-top: 10px;
+      padding: 8px;
+      border-radius: 8px;
+      border: 1px solid var(--border);
+      background: var(--bg3);
+      color: var(--text);
+      font-size: 12px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .model-pref-btn:hover { border-color: var(--klaus); }
+    .model-pref-btn.active {
+      border-color: var(--green);
+      background: rgba(34,197,94,0.1);
+      color: var(--green);
+    }
+
+    /* Skills Grid */
+    .skills-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+    }
+    .skill-card {
+      background: var(--bg2);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 12px 10px;
+      cursor: pointer;
+      transition: all 0.2s;
+      text-align: center;
+    }
+    .skill-card:hover {
+      border-color: var(--klaus);
+      background: var(--bg3);
+    }
+    .skill-card .skill-icon {
+      font-size: 20px;
+      margin-bottom: 4px;
+    }
+    .skill-card .skill-name {
+      font-size: 11px;
+      font-weight: 600;
+      margin-bottom: 2px;
+    }
+    .skill-card .skill-desc {
+      font-size: 10px;
+      color: var(--text-dim);
+      line-height: 1.3;
+    }
+
+    /* Tasks Section */
+    .task-add-btn {
+      width: 24px;
+      height: 24px;
+      border-radius: 6px;
+      border: 1px solid var(--border);
+      background: var(--bg2);
+      color: var(--text-dim);
+      font-size: 14px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.2s;
+    }
+    .task-add-btn:hover { border-color: var(--klaus); color: var(--klaus); }
+    .task-form {
+      display: none;
+      background: var(--bg2);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 10px;
+      margin-bottom: 8px;
+    }
+    .task-form.visible { display: block; }
+    .task-form input {
+      width: 100%;
+      padding: 8px 10px;
+      border-radius: 8px;
+      border: 1px solid var(--border);
+      background: var(--bg3);
+      color: var(--text);
+      font-size: 12px;
+      font-family: inherit;
+      outline: none;
+      margin-bottom: 6px;
+    }
+    .task-form input:focus { border-color: var(--klaus); }
+    .task-form-actions {
+      display: flex;
+      gap: 6px;
+      justify-content: flex-end;
+    }
+    .task-form-btn {
+      padding: 5px 12px;
+      border-radius: 6px;
+      border: none;
+      font-size: 11px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .task-form-btn.save {
+      background: var(--klaus);
+      color: #000;
+    }
+    .task-form-btn.cancel {
+      background: var(--bg3);
+      color: var(--text-dim);
+    }
+    .task-list {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+    .task-item {
+      background: var(--bg2);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 10px;
+      font-size: 12px;
+      display: flex;
+      align-items: flex-start;
+      gap: 8px;
+      transition: all 0.2s;
+    }
+    .task-item:hover { border-color: var(--klaus); }
+    .task-check {
+      width: 16px;
+      height: 16px;
+      border-radius: 4px;
+      border: 2px solid var(--border);
+      flex-shrink: 0;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 10px;
+      margin-top: 1px;
+      transition: all 0.2s;
+    }
+    .task-check:hover { border-color: var(--klaus); }
+    .task-item.done .task-check {
+      background: var(--green);
+      border-color: var(--green);
+      color: #fff;
+    }
+    .task-item.done .task-title {
+      text-decoration: line-through;
+      color: var(--text-dim);
+    }
+    .task-body { flex: 1; min-width: 0; }
+    .task-title {
+      font-weight: 500;
+      margin-bottom: 2px;
+      word-break: break-word;
+    }
+    .task-meta {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .task-status {
+      font-size: 10px;
+      padding: 1px 6px;
+      border-radius: 4px;
+      font-weight: 600;
+    }
+    .task-status.pending { color: var(--klaus); background: var(--klaus-glow); }
+    .task-status.active { color: var(--blue); background: rgba(59,130,246,0.1); }
+    .task-status.done { color: var(--green); background: rgba(34,197,94,0.1); }
+    .task-ask-btn {
+      flex-shrink: 0;
+      padding: 3px 8px;
+      border-radius: 6px;
+      border: 1px solid var(--border);
+      background: var(--bg);
+      color: var(--text-dim);
+      font-size: 10px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .task-ask-btn:hover { border-color: var(--klaus); color: var(--text); }
+    .task-delete-btn {
+      flex-shrink: 0;
+      padding: 3px 6px;
+      border-radius: 6px;
+      border: none;
+      background: transparent;
+      color: var(--text-dim);
+      font-size: 12px;
+      cursor: pointer;
+      opacity: 0;
+      transition: all 0.2s;
+    }
+    .task-item:hover .task-delete-btn { opacity: 1; }
+    .task-delete-btn:hover { color: var(--red); }
+    .tasks-empty {
+      font-size: 12px;
+      color: var(--text-dim);
+      text-align: center;
+      padding: 16px 0;
+    }
+
+    /* ===== CHAT PANEL ===== */
+    .chat-panel {
       flex: 1;
       display: flex;
       flex-direction: column;
-      max-width: 800px;
-      margin: 0 auto;
-      width: 100%;
-      padding: 0 16px;
+      min-width: 0;
+      overflow: hidden;
     }
 
     /* Messages */
     #messages {
       flex: 1;
       overflow-y: auto;
-      padding: 20px 0;
+      padding: 16px 20px;
       display: flex;
       flex-direction: column;
-      gap: 16px;
+      gap: 14px;
     }
     .message {
       display: flex;
-      gap: 12px;
+      gap: 10px;
       animation: fadeIn 0.3s ease;
+      max-width: 700px;
     }
     @keyframes fadeIn {
-      from { opacity: 0; transform: translateY(10px); }
+      from { opacity: 0; transform: translateY(8px); }
       to { opacity: 1; transform: translateY(0); }
     }
     .message.user {
       flex-direction: row-reverse;
+      margin-left: auto;
     }
     .msg-avatar {
-      width: 32px;
-      height: 32px;
-      border-radius: 10px;
+      width: 28px;
+      height: 28px;
+      border-radius: 8px;
       display: flex;
       align-items: center;
       justify-content: center;
-      font-size: 14px;
+      font-size: 12px;
       flex-shrink: 0;
     }
     .message.klaus .msg-avatar {
@@ -194,44 +529,57 @@
     }
     .msg-content {
       max-width: 75%;
-      padding: 12px 16px;
-      border-radius: 16px;
+      padding: 10px 14px;
+      border-radius: 14px;
       line-height: 1.5;
-      font-size: 14px;
+      font-size: 13px;
     }
     .message.klaus .msg-content {
       background: var(--bg2);
-      border-radius: 16px 16px 16px 4px;
+      border-radius: 14px 14px 14px 4px;
     }
     .message.user .msg-content {
       background: var(--klaus);
       color: #000;
-      border-radius: 16px 16px 4px 16px;
+      border-radius: 14px 14px 4px 14px;
     }
     .msg-content pre {
       background: var(--bg);
-      padding: 12px;
+      padding: 10px;
       border-radius: 8px;
       overflow-x: auto;
-      margin: 8px 0;
-      font-size: 13px;
+      margin: 6px 0;
+      font-size: 12px;
     }
     .msg-content code {
       background: var(--bg);
-      padding: 2px 6px;
+      padding: 2px 5px;
       border-radius: 4px;
-      font-size: 13px;
+      font-size: 12px;
+    }
+    .msg-model-tag {
+      font-size: 10px;
+      color: var(--text-dim);
+      margin-top: 4px;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+    .msg-model-tag .tag-dot {
+      width: 4px;
+      height: 4px;
+      border-radius: 50%;
     }
 
     /* Typing indicator */
     .typing-indicator {
       display: flex;
       gap: 4px;
-      padding: 12px 16px;
+      padding: 10px 14px;
     }
     .typing-indicator span {
-      width: 8px;
-      height: 8px;
+      width: 7px;
+      height: 7px;
       background: var(--klaus);
       border-radius: 50%;
       animation: bounce 1.4s infinite both;
@@ -247,29 +595,29 @@
     /* Thinking Steps */
     .thinking-container {
       display: flex;
-      gap: 12px;
+      gap: 10px;
       animation: fadeIn 0.3s ease;
     }
     .thinking-panel {
       max-width: 75%;
       border-left: 2px solid var(--klaus);
-      padding: 8px 0 8px 12px;
-      margin-left: 44px;
+      padding: 6px 0 6px 10px;
+      margin-left: 38px;
     }
     .thinking-toggle {
       display: flex;
       align-items: center;
-      gap: 6px;
+      gap: 5px;
       cursor: pointer;
-      font-size: 12px;
+      font-size: 11px;
       color: var(--text-dim);
-      padding: 4px 0;
+      padding: 3px 0;
       user-select: none;
     }
     .thinking-toggle:hover { color: var(--text); }
     .thinking-toggle .toggle-arrow {
       transition: transform 0.2s;
-      font-size: 10px;
+      font-size: 9px;
     }
     .thinking-toggle .toggle-arrow.collapsed { transform: rotate(-90deg); }
     .thinking-steps-list {
@@ -278,137 +626,58 @@
       max-height: 300px;
       opacity: 1;
     }
-    .thinking-steps-list.collapsed {
-      max-height: 0;
-      opacity: 0;
-    }
+    .thinking-steps-list.collapsed { max-height: 0; opacity: 0; }
     .thinking-step {
       display: flex;
       align-items: center;
-      gap: 8px;
-      padding: 4px 0;
-      font-size: 13px;
+      gap: 6px;
+      padding: 3px 0;
+      font-size: 12px;
       color: var(--text-dim);
       animation: fadeIn 0.3s ease;
     }
     .thinking-step .step-icon {
-      width: 16px;
-      height: 16px;
+      width: 14px;
+      height: 14px;
       display: flex;
       align-items: center;
       justify-content: center;
       flex-shrink: 0;
     }
     .thinking-step .step-spinner {
-      width: 14px;
-      height: 14px;
+      width: 12px;
+      height: 12px;
       border: 2px solid var(--border);
       border-top-color: var(--klaus);
       border-radius: 50%;
       animation: spin 0.8s linear infinite;
     }
-    @keyframes spin {
-      to { transform: rotate(360deg); }
-    }
+    @keyframes spin { to { transform: rotate(360deg); } }
     .thinking-step.complete .step-icon { color: var(--green); }
-    .thinking-step.complete { color: var(--text-dim); }
     .thinking-summary {
-      font-size: 12px;
+      font-size: 11px;
       color: var(--text-dim);
-      padding: 4px 0;
+      padding: 3px 0;
       display: none;
     }
     .thinking-summary.visible { display: block; }
 
-    /* Input Area */
-    .input-area {
-      padding: 16px;
-      padding-bottom: calc(16px + var(--safe-bottom));
-      border-top: 1px solid var(--border);
-      background: var(--bg);
-    }
-    .input-container {
-      display: flex;
-      gap: 12px;
-      max-width: 800px;
-      margin: 0 auto;
-    }
-    #chatInput {
-      flex: 1;
-      padding: 14px 18px;
-      border-radius: 24px;
-      border: 1px solid var(--border);
-      background: var(--bg2);
-      color: var(--text);
-      font-size: 15px;
-      font-family: inherit;
-      resize: none;
-      outline: none;
-      min-height: 48px;
-      max-height: 120px;
-    }
-    #chatInput:focus {
-      border-color: var(--klaus);
-    }
-    #chatInput::placeholder {
-      color: var(--text-dim);
-    }
-    #sendBtn {
-      width: 48px;
-      height: 48px;
-      border-radius: 50%;
-      border: none;
-      background: var(--klaus);
-      color: #000;
-      font-size: 20px;
-      cursor: pointer;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      transition: all 0.2s;
-    }
-    #sendBtn:hover {
-      transform: scale(1.05);
-      box-shadow: 0 4px 20px var(--klaus-glow);
-    }
-    #sendBtn:disabled {
-      opacity: 0.5;
-      cursor: not-allowed;
-      transform: none;
-    }
-
-    /* Training Mode Banner */
-    .training-banner {
-      background: linear-gradient(90deg, var(--klaus-glow), transparent);
-      padding: 8px 16px;
-      font-size: 12px;
-      color: var(--klaus);
-      display: none;
-      align-items: center;
-      gap: 8px;
-    }
-    .training-banner.active {
-      display: flex;
-    }
-
-    /* Share to Team Button */
+    /* Message Actions */
     .msg-actions {
       display: flex;
-      gap: 8px;
-      margin-top: 8px;
+      gap: 6px;
+      margin-top: 6px;
       opacity: 0;
       transition: opacity 0.2s;
     }
-    .message:hover .msg-actions {
-      opacity: 1;
-    }
+    .message:hover .msg-actions { opacity: 1; }
     .msg-action-btn {
-      padding: 4px 10px;
-      border-radius: 12px;
+      padding: 3px 8px;
+      border-radius: 10px;
       border: 1px solid var(--border);
       background: var(--bg);
       color: var(--text-dim);
-      font-size: 11px;
+      font-size: 10px;
       cursor: pointer;
       transition: all 0.2s;
     }
@@ -426,45 +695,43 @@
       align-items: center;
       justify-content: center;
       text-align: center;
-      padding: 40px;
+      padding: 32px 20px;
     }
     .welcome-avatar {
-      width: 80px;
-      height: 80px;
-      border-radius: 24px;
+      width: 64px;
+      height: 64px;
+      border-radius: 20px;
       background: var(--klaus);
       display: flex;
       align-items: center;
       justify-content: center;
-      font-size: 36px;
+      font-size: 28px;
       font-weight: 700;
       color: #000;
-      margin-bottom: 24px;
-      box-shadow: 0 8px 40px var(--klaus-glow);
+      margin-bottom: 16px;
+      box-shadow: 0 6px 30px var(--klaus-glow);
     }
-    .welcome h2 {
-      font-size: 24px;
-      margin-bottom: 12px;
-    }
+    .welcome h2 { font-size: 20px; margin-bottom: 8px; }
     .welcome p {
       color: var(--text-dim);
-      max-width: 400px;
-      line-height: 1.6;
-      margin-bottom: 24px;
+      max-width: 380px;
+      line-height: 1.5;
+      margin-bottom: 16px;
+      font-size: 13px;
     }
     .welcome-prompts {
       display: flex;
       flex-wrap: wrap;
-      gap: 8px;
+      gap: 6px;
       justify-content: center;
     }
     .welcome-prompt {
-      padding: 10px 16px;
+      padding: 8px 14px;
       background: var(--bg2);
       border: 1px solid var(--border);
-      border-radius: 20px;
+      border-radius: 18px;
       color: var(--text);
-      font-size: 13px;
+      font-size: 12px;
       cursor: pointer;
       transition: all 0.2s;
     }
@@ -473,191 +740,124 @@
       background: var(--bg3);
     }
 
+    /* Input Area */
+    .input-area {
+      padding: 12px 16px;
+      padding-bottom: calc(12px + var(--safe-bottom));
+      border-top: 1px solid var(--border);
+      background: var(--bg);
+      flex-shrink: 0;
+    }
+    .input-container {
+      display: flex;
+      gap: 10px;
+      max-width: 700px;
+      margin: 0 auto;
+    }
+    #chatInput {
+      flex: 1;
+      padding: 12px 16px;
+      border-radius: 20px;
+      border: 1px solid var(--border);
+      background: var(--bg2);
+      color: var(--text);
+      font-size: 14px;
+      font-family: inherit;
+      resize: none;
+      outline: none;
+      min-height: 44px;
+      max-height: 100px;
+    }
+    #chatInput:focus { border-color: var(--klaus); }
+    #chatInput::placeholder { color: var(--text-dim); }
+    #sendBtn {
+      width: 44px;
+      height: 44px;
+      border-radius: 50%;
+      border: none;
+      background: var(--klaus);
+      color: #000;
+      font-size: 18px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.2s;
+      flex-shrink: 0;
+    }
+    #sendBtn:hover {
+      transform: scale(1.05);
+      box-shadow: 0 4px 16px var(--klaus-glow);
+    }
+    #sendBtn:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+      transform: none;
+    }
+
     /* Toast */
     .toast {
       position: fixed;
-      bottom: 100px;
+      bottom: 80px;
       left: 50%;
       transform: translateX(-50%) translateY(100px);
       background: var(--green);
       color: #000;
-      padding: 12px 24px;
-      border-radius: 24px;
-      font-size: 14px;
+      padding: 10px 20px;
+      border-radius: 20px;
+      font-size: 13px;
       font-weight: 500;
       z-index: 1000;
       transition: transform 0.3s ease;
     }
-    .toast.show {
-      transform: translateX(-50%) translateY(0);
-    }
+    .toast.show { transform: translateX(-50%) translateY(0); }
 
-    /* ===== MOBILE RESPONSIVE ===== */
-    @media (max-width: 600px) {
-      header {
-        padding: 10px 12px;
+    /* ===== MOBILE ===== */
+    @media (max-width: 768px) {
+      .mobile-tabs { display: block; }
+      .sidebar {
+        display: none;
+        width: 100%;
+        border-right: none;
+        padding: 12px;
+        overflow-y: auto;
       }
-      .back-btn {
-        width: 32px;
-        height: 32px;
-        font-size: 16px;
+      .sidebar.mobile-visible {
+        display: flex;
+        flex: 1;
       }
-      .klaus-avatar {
-        width: 34px;
-        height: 34px;
-        border-radius: 10px;
-        font-size: 16px;
-      }
-      .klaus-info h1 {
-        font-size: 14px;
-      }
-      .klaus-status {
-        font-size: 11px;
-      }
-      .training-toggle {
-        padding: 6px 10px;
-        font-size: 11px;
-      }
-      .toggle-switch {
-        width: 28px;
-        height: 16px;
-      }
-      .toggle-switch::after {
-        width: 12px;
-        height: 12px;
-      }
-      .training-toggle.active .toggle-switch::after {
-        left: 14px;
-      }
-
-      .chat-container {
-        padding: 0 10px;
-      }
-      #messages {
-        padding: 12px 0;
-        gap: 12px;
-      }
-
-      .msg-avatar {
-        width: 28px;
-        height: 28px;
-        font-size: 12px;
-        border-radius: 8px;
-      }
-      .msg-content {
-        max-width: 82%;
-        padding: 10px 12px;
-        font-size: 13px;
-        border-radius: 14px;
-        overflow-wrap: break-word;
-        word-break: break-word;
-      }
-      .message.klaus .msg-content {
-        border-radius: 14px 14px 14px 4px;
-      }
-      .message.user .msg-content {
-        border-radius: 14px 14px 4px 14px;
-      }
-      .msg-content pre {
-        font-size: 11px;
-        padding: 8px;
-      }
-      .msg-content code {
-        font-size: 11px;
-      }
-
-      /* Thinking steps mobile */
-      .thinking-panel {
-        max-width: 85%;
-        margin-left: 36px;
-        padding: 6px 0 6px 10px;
-      }
-      .thinking-step {
-        font-size: 12px;
-        gap: 6px;
-        padding: 3px 0;
-      }
-      .thinking-toggle {
-        font-size: 11px;
-      }
-
-      /* Input area mobile */
-      .input-area {
-        padding: 10px 12px;
-        padding-bottom: calc(10px + var(--safe-bottom));
-      }
-      .input-container {
-        gap: 8px;
-      }
-      #chatInput {
-        padding: 12px 14px;
-        font-size: 14px;
-        border-radius: 20px;
-        min-height: 44px;
-      }
-      #sendBtn {
-        width: 44px;
-        height: 44px;
-        font-size: 18px;
-      }
-
-      /* Welcome screen mobile */
-      .welcome {
-        padding: 24px 16px;
-      }
-      .welcome-avatar {
-        width: 64px;
-        height: 64px;
-        font-size: 28px;
-        border-radius: 20px;
-        margin-bottom: 16px;
-      }
-      .welcome h2 {
-        font-size: 20px;
-      }
-      .welcome p {
-        font-size: 13px;
-        margin-bottom: 16px;
-      }
-      .welcome-prompts {
-        gap: 6px;
-      }
-      .welcome-prompt {
-        padding: 8px 12px;
-        font-size: 12px;
-      }
-
-      /* Message actions - always visible on mobile (no hover) */
-      .msg-actions {
-        opacity: 1;
-      }
-      .msg-action-btn {
-        font-size: 10px;
-        padding: 3px 8px;
-      }
-
-      /* Training banner mobile */
-      .training-banner {
-        padding: 6px 12px;
-        font-size: 11px;
-      }
-
-      /* Toast mobile */
-      .toast {
-        bottom: 80px;
-        font-size: 13px;
-        padding: 10px 20px;
-      }
+      .chat-panel.mobile-hidden { display: none; }
+      .main-layout { flex-direction: column; }
+      header { padding: 8px 12px; }
+      .back-btn { width: 32px; height: 32px; font-size: 16px; }
+      .klaus-avatar { width: 32px; height: 32px; font-size: 14px; }
+      .klaus-info h1 { font-size: 14px; }
+      .model-badge { font-size: 10px; padding: 3px 8px; }
+      .training-toggle { font-size: 10px; padding: 5px 8px; }
+      #messages { padding: 12px; gap: 10px; }
+      .msg-content { max-width: 85%; padding: 8px 12px; font-size: 12px; }
+      .msg-avatar { width: 24px; height: 24px; font-size: 10px; border-radius: 6px; }
+      .input-area { padding: 8px 10px; padding-bottom: calc(8px + var(--safe-bottom)); }
+      #chatInput { padding: 10px 14px; font-size: 13px; min-height: 40px; border-radius: 18px; }
+      #sendBtn { width: 40px; height: 40px; font-size: 16px; }
+      .welcome { padding: 20px 16px; }
+      .welcome-avatar { width: 52px; height: 52px; font-size: 24px; margin-bottom: 12px; }
+      .welcome h2 { font-size: 18px; }
+      .welcome p { font-size: 12px; }
+      .welcome-prompt { font-size: 11px; padding: 6px 10px; }
+      .thinking-panel { margin-left: 32px; }
+      .msg-actions { opacity: 1; }
+      .task-delete-btn { opacity: 1; }
+      .skill-card .skill-icon { font-size: 18px; }
+      .skill-card .skill-name { font-size: 10px; }
+      .skill-card .skill-desc { font-size: 9px; }
     }
 
     /* Touch feedback */
     @media (hover: none) {
-      button:active, .welcome-prompt:active, .msg-action-btn:active {
+      button:active, .welcome-prompt:active, .msg-action-btn:active, .skill-card:active {
         transform: scale(0.97);
         transition: transform 0.05s;
-      }
-      #sendBtn:active:not(:disabled) {
-        transform: scale(0.95);
       }
     }
 
@@ -674,74 +874,275 @@
 <body>
   <header>
     <div class="header-left">
-      <button class="back-btn" onclick="window.location.href='/'">←</button>
+      <button class="back-btn" onclick="window.location.href='/'">&#8592;</button>
       <div class="klaus-avatar">K</div>
       <div class="klaus-info">
         <h1>Klaus</h1>
-        <div class="klaus-status" id="statusText">Online</div>
+        <div class="klaus-status" id="statusText">
+          <span class="status-dot" id="statusDot"></span>
+          <span id="statusLabel">Checking...</span>
+        </div>
       </div>
     </div>
     <div class="header-right">
+      <div class="model-badge" id="modelBadge" onclick="toggleModelPref()" title="Click to toggle model preference">
+        <span class="badge-dot"></span>
+        <span id="modelBadgeText">...</span>
+      </div>
       <label class="training-toggle" id="trainingToggle">
         <input type="checkbox" id="trainingMode">
-        <span>Training</span>
+        <span>Train</span>
         <div class="toggle-switch"></div>
       </label>
     </div>
   </header>
 
   <div class="training-banner" id="trainingBanner">
-    <span>🎓</span>
+    <span>&#127891;</span>
     <span>Training Mode Active - Klaus will remember what you teach</span>
   </div>
 
-  <div class="chat-container">
-    <div id="messages">
-      <div class="welcome" id="welcome">
-        <div class="welcome-avatar">K</div>
-        <h2>Hey James!</h2>
-        <p>I'm Klaus, your AI apprentice. Chat with me, teach me new things, or just brainstorm ideas. Everything we discuss helps me learn and grow.</p>
-        <div class="welcome-prompts">
-          <button class="welcome-prompt" onclick="usePrompt('Tell me about yourself, Klaus')">Who are you?</button>
-          <button class="welcome-prompt" onclick="usePrompt('What have you learned recently?')">Recent learnings</button>
-          <button class="welcome-prompt" onclick="usePrompt('Klaus, remember that...')">Teach something</button>
-          <button class="welcome-prompt" onclick="usePrompt('Help me brainstorm ideas for')">Brainstorm</button>
-        </div>
-      </div>
+  <div class="mobile-tabs" id="mobileTabs">
+    <div class="mobile-tabs-inner">
+      <div class="mobile-tab active" data-tab="chat" onclick="switchTab('chat')">Chat</div>
+      <div class="mobile-tab" data-tab="skills" onclick="switchTab('skills')">Skills</div>
+      <div class="mobile-tab" data-tab="tasks" onclick="switchTab('tasks')">Tasks</div>
     </div>
   </div>
 
-  <div class="input-area">
-    <div class="input-container">
-      <textarea id="chatInput" placeholder="Message Klaus..." rows="1"></textarea>
-      <button id="sendBtn" onclick="sendMessage()">↑</button>
-    </div>
+  <div class="main-layout">
+    <!-- SIDEBAR -->
+    <aside class="sidebar" id="sidebar">
+      <!-- Model Connection -->
+      <div class="sidebar-section">
+        <h3>Connection</h3>
+        <div class="model-card">
+          <div class="model-card-header">
+            <span>Mac Studio Ollama</span>
+            <span class="model-card-status" id="ollamaStatus">checking...</span>
+          </div>
+          <div class="model-card-row">
+            <span>Model</span>
+            <span id="activeModel">klaus</span>
+          </div>
+          <div class="model-card-row">
+            <span>Endpoint</span>
+            <span>hdr.it.com.ngrok.pro</span>
+          </div>
+          <div class="model-card-row">
+            <span>Skills</span>
+            <span id="skillCount">-</span>
+          </div>
+          <div class="model-card-row">
+            <span>Last response</span>
+            <span id="lastModelUsed">-</span>
+          </div>
+          <button class="model-pref-btn" id="ollamaPrefBtn" onclick="toggleModelPref()">
+            Use Ollama as primary
+          </button>
+        </div>
+      </div>
+
+      <!-- Skills -->
+      <div class="sidebar-section">
+        <h3>Skills</h3>
+        <div class="skills-grid">
+          <div class="skill-card" onclick="useSkill('code')">
+            <div class="skill-icon">&#128295;</div>
+            <div class="skill-name">Code Review</div>
+            <div class="skill-desc">Analyze & review code</div>
+          </div>
+          <div class="skill-card" onclick="useSkill('research')">
+            <div class="skill-icon">&#128269;</div>
+            <div class="skill-name">Research</div>
+            <div class="skill-desc">Explore topics & docs</div>
+          </div>
+          <div class="skill-card" onclick="useSkill('brainstorm')">
+            <div class="skill-icon">&#128161;</div>
+            <div class="skill-name">Brainstorm</div>
+            <div class="skill-desc">Generate ideas</div>
+          </div>
+          <div class="skill-card" onclick="useSkill('debug')">
+            <div class="skill-icon">&#128027;</div>
+            <div class="skill-name">Debug</div>
+            <div class="skill-desc">Find & fix issues</div>
+          </div>
+          <div class="skill-card" onclick="useSkill('write')">
+            <div class="skill-icon">&#9997;</div>
+            <div class="skill-name">Writing</div>
+            <div class="skill-desc">Draft text & docs</div>
+          </div>
+          <div class="skill-card" onclick="useSkill('learn')">
+            <div class="skill-icon">&#127891;</div>
+            <div class="skill-name">Learning</div>
+            <div class="skill-desc">Teach Klaus new things</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Tasks -->
+      <div class="sidebar-section">
+        <h3>
+          Tasks
+          <button class="task-add-btn" onclick="toggleTaskForm()">+</button>
+        </h3>
+        <div class="task-form" id="taskForm">
+          <input type="text" id="taskInput" placeholder="What should Klaus work on?" onkeydown="if(event.key==='Enter')addTask()">
+          <div class="task-form-actions">
+            <button class="task-form-btn cancel" onclick="toggleTaskForm()">Cancel</button>
+            <button class="task-form-btn save" onclick="addTask()">Add</button>
+          </div>
+        </div>
+        <div class="task-list" id="taskList"></div>
+      </div>
+    </aside>
+
+    <!-- CHAT PANEL -->
+    <main class="chat-panel" id="chatPanel">
+      <div id="messages">
+        <div class="welcome" id="welcome">
+          <div class="welcome-avatar">K</div>
+          <h2>Hey James!</h2>
+          <p>I'm Klaus, your AI apprentice. Chat with me, teach me new things, or assign tasks from the sidebar.</p>
+          <div class="welcome-prompts">
+            <button class="welcome-prompt" onclick="usePrompt('Tell me about yourself, Klaus')">Who are you?</button>
+            <button class="welcome-prompt" onclick="usePrompt('What have you learned recently?')">Recent learnings</button>
+            <button class="welcome-prompt" onclick="usePrompt('Help me brainstorm ideas for')">Brainstorm</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="input-area">
+        <div class="input-container">
+          <textarea id="chatInput" placeholder="Message Klaus..." rows="1"></textarea>
+          <button id="sendBtn" onclick="sendMessage()">&#8593;</button>
+        </div>
+      </div>
+    </main>
   </div>
 
   <div class="toast" id="toast"></div>
 
   <script>
-    // Config
-    const GROQ_API = '/api/klaus-chat';
+    // ===== CONFIG =====
+    const KLAUS_API = '/api/klaus-chat';
     const TEAM_API = '/api/messages';
-    const STORAGE_KEY = 'klaus-training-history';
+    const CHAT_KEY = 'klaus-training-history';
+    const TASK_KEY = 'klaus-tasks';
+    const PREF_KEY = 'klaus-prefer-ollama';
 
     let messages = [];
+    let tasks = [];
     let isStreaming = false;
     let trainingMode = false;
+    let preferOllama = localStorage.getItem(PREF_KEY) === 'true';
+    let lastModel = '-';
 
-    // DOM elements
+    // DOM
     const messagesEl = document.getElementById('messages');
     const welcomeEl = document.getElementById('welcome');
     const inputEl = document.getElementById('chatInput');
     const sendBtn = document.getElementById('sendBtn');
     const trainingToggle = document.getElementById('trainingToggle');
     const trainingBanner = document.getElementById('trainingBanner');
+    const taskListEl = document.getElementById('taskList');
+    const taskFormEl = document.getElementById('taskForm');
+    const taskInputEl = document.getElementById('taskInput');
+    const modelBadge = document.getElementById('modelBadge');
+    const modelBadgeText = document.getElementById('modelBadgeText');
+    const ollamaStatus = document.getElementById('ollamaStatus');
+    const ollamaPrefBtn = document.getElementById('ollamaPrefBtn');
+    const lastModelUsed = document.getElementById('lastModelUsed');
+    const statusDot = document.getElementById('statusDot');
+    const statusLabel = document.getElementById('statusLabel');
 
-    // Load history
+    // ===== MOBILE TABS =====
+    function switchTab(tab) {
+      document.querySelectorAll('.mobile-tab').forEach(t => t.classList.toggle('active', t.dataset.tab === tab));
+      const sidebar = document.getElementById('sidebar');
+      const chatPanel = document.getElementById('chatPanel');
+
+      if (tab === 'chat') {
+        sidebar.classList.remove('mobile-visible');
+        chatPanel.classList.remove('mobile-hidden');
+      } else {
+        sidebar.classList.add('mobile-visible');
+        chatPanel.classList.add('mobile-hidden');
+        // Scroll to relevant section
+        if (tab === 'skills') {
+          sidebar.scrollTop = 0;
+        } else if (tab === 'tasks') {
+          const taskSection = sidebar.querySelector('.sidebar-section:last-child');
+          if (taskSection) taskSection.scrollIntoView({ behavior: 'smooth' });
+        }
+      }
+    }
+
+    // ===== MODEL STATUS =====
+    function updateModelUI() {
+      ollamaPrefBtn.classList.toggle('active', preferOllama);
+      ollamaPrefBtn.textContent = preferOllama ? 'Ollama is primary' : 'Use Ollama as primary';
+      localStorage.setItem(PREF_KEY, preferOllama);
+    }
+
+    function toggleModelPref() {
+      preferOllama = !preferOllama;
+      updateModelUI();
+      showToast(preferOllama ? 'Ollama set as primary' : 'Groq set as primary');
+    }
+
+    function updateModelBadge(model) {
+      lastModel = model;
+      lastModelUsed.textContent = model;
+      modelBadge.className = 'model-badge';
+      if (model.includes('ollama')) {
+        modelBadge.classList.add('ollama');
+        modelBadgeText.textContent = 'Ollama';
+      } else if (model.includes('groq')) {
+        modelBadge.classList.add('groq');
+        modelBadgeText.textContent = 'Groq';
+      } else {
+        modelBadge.classList.add('offline');
+        modelBadgeText.textContent = 'Offline';
+      }
+    }
+
+    async function checkHealth() {
+      try {
+        const res = await fetch(KLAUS_API);
+        const data = await res.json();
+        const isOnline = data.ollama === 'online';
+        ollamaStatus.textContent = isOnline ? 'online' : 'offline';
+        ollamaStatus.className = 'model-card-status ' + (isOnline ? 'online' : 'offline');
+        statusDot.className = 'status-dot ' + (isOnline || data.groq === 'configured' ? 'online' : 'offline');
+        statusLabel.textContent = isOnline ? 'Ollama Online' : (data.groq === 'configured' ? 'Groq Online' : 'Offline');
+
+        // Populate model card from status details
+        if (data.ollamaDetails && data.ollamaDetails.online) {
+          const d = data.ollamaDetails;
+          if (d.active_model) document.getElementById('activeModel').textContent = d.active_model;
+          if (d.skills_count != null) document.getElementById('skillCount').textContent = d.skills_count + ' available';
+          else if (d.skills && Array.isArray(d.skills)) document.getElementById('skillCount').textContent = d.skills.length + ' available';
+        }
+
+        if (!lastModel || lastModel === '-') {
+          if (isOnline && preferOllama) updateModelBadge('ollama-klaus');
+          else if (data.groq === 'configured') updateModelBadge('groq-llama-70b');
+          else if (isOnline) updateModelBadge('ollama-klaus');
+          else updateModelBadge('offline');
+        }
+      } catch (e) {
+        ollamaStatus.textContent = 'offline';
+        ollamaStatus.className = 'model-card-status offline';
+        statusDot.className = 'status-dot offline';
+        statusLabel.textContent = 'Offline';
+      }
+    }
+
+    // ===== CHAT HISTORY =====
     function loadHistory() {
       try {
-        const stored = localStorage.getItem(STORAGE_KEY);
+        const stored = localStorage.getItem(CHAT_KEY);
         if (stored) {
           messages = JSON.parse(stored);
           if (messages.length > 0) {
@@ -752,25 +1153,22 @@
       } catch (e) {}
     }
 
-    // Save history
     function saveHistory() {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(messages.slice(-50)));
+      localStorage.setItem(CHAT_KEY, JSON.stringify(messages.slice(-50)));
     }
 
-    // Training mode toggle
+    // ===== TRAINING TOGGLE =====
     trainingToggle.addEventListener('click', () => {
       trainingMode = !trainingMode;
       trainingToggle.classList.toggle('active', trainingMode);
       trainingBanner.classList.toggle('active', trainingMode);
     });
 
-    // Auto-resize textarea
+    // ===== TEXTAREA =====
     inputEl.addEventListener('input', () => {
       inputEl.style.height = 'auto';
-      inputEl.style.height = Math.min(inputEl.scrollHeight, 120) + 'px';
+      inputEl.style.height = Math.min(inputEl.scrollHeight, 100) + 'px';
     });
-
-    // Enter to send
     inputEl.addEventListener('keydown', (e) => {
       if (e.key === 'Enter' && !e.shiftKey) {
         e.preventDefault();
@@ -778,27 +1176,129 @@
       }
     });
 
-    // Use welcome prompt
+    // ===== SKILLS =====
+    const SKILL_PROMPTS = {
+      code: 'Review this code and suggest improvements:\n```\n',
+      research: 'Research and summarize: ',
+      brainstorm: 'Help me brainstorm ideas for ',
+      debug: 'Help me debug this issue: ',
+      write: 'Help me write ',
+      learn: 'Klaus, remember that '
+    };
+
+    function useSkill(skill) {
+      const prompt = SKILL_PROMPTS[skill] || '';
+      inputEl.value = prompt;
+      inputEl.focus();
+      // On mobile, switch to chat tab
+      if (window.innerWidth <= 768) switchTab('chat');
+    }
+
     function usePrompt(text) {
       inputEl.value = text;
       inputEl.focus();
     }
 
-    // Format message content
+    // ===== TASKS =====
+    function loadTasks() {
+      try {
+        const stored = localStorage.getItem(TASK_KEY);
+        if (stored) tasks = JSON.parse(stored);
+      } catch (e) {}
+      renderTasks();
+    }
+
+    function saveTasks() {
+      localStorage.setItem(TASK_KEY, JSON.stringify(tasks));
+    }
+
+    function toggleTaskForm() {
+      taskFormEl.classList.toggle('visible');
+      if (taskFormEl.classList.contains('visible')) {
+        taskInputEl.value = '';
+        taskInputEl.focus();
+      }
+    }
+
+    function addTask() {
+      const title = taskInputEl.value.trim();
+      if (!title) return;
+      tasks.unshift({
+        id: Date.now().toString(),
+        title,
+        status: 'pending',
+        created: new Date().toISOString()
+      });
+      saveTasks();
+      renderTasks();
+      toggleTaskForm();
+    }
+
+    function toggleTaskStatus(id) {
+      const task = tasks.find(t => t.id === id);
+      if (!task) return;
+      const cycle = { pending: 'active', active: 'done', done: 'pending' };
+      task.status = cycle[task.status];
+      saveTasks();
+      renderTasks();
+    }
+
+    function deleteTask(id) {
+      tasks = tasks.filter(t => t.id !== id);
+      saveTasks();
+      renderTasks();
+    }
+
+    function askKlausAboutTask(id) {
+      const task = tasks.find(t => t.id === id);
+      if (!task) return;
+      inputEl.value = `Work on this task: ${task.title}`;
+      inputEl.focus();
+      // Mark as active
+      task.status = 'active';
+      saveTasks();
+      renderTasks();
+      // On mobile, switch to chat
+      if (window.innerWidth <= 768) switchTab('chat');
+    }
+
+    function renderTasks() {
+      if (tasks.length === 0) {
+        taskListEl.innerHTML = '<div class="tasks-empty">No tasks yet. Click + to add one.</div>';
+        return;
+      }
+      taskListEl.innerHTML = tasks.map(t => `
+        <div class="task-item ${t.status === 'done' ? 'done' : ''}">
+          <div class="task-check" onclick="toggleTaskStatus('${t.id}')">${t.status === 'done' ? '&#10003;' : ''}</div>
+          <div class="task-body">
+            <div class="task-title">${escapeHtml(t.title)}</div>
+            <div class="task-meta">
+              <span class="task-status ${t.status}">${t.status}</span>
+            </div>
+          </div>
+          ${t.status !== 'done' ? `<button class="task-ask-btn" onclick="askKlausAboutTask('${t.id}')">Ask Klaus</button>` : ''}
+          <button class="task-delete-btn" onclick="deleteTask('${t.id}')">&#215;</button>
+        </div>
+      `).join('');
+    }
+
+    function escapeHtml(text) {
+      const div = document.createElement('div');
+      div.textContent = text;
+      return div.innerHTML;
+    }
+
+    // ===== FORMAT =====
     function formatContent(text) {
-      // Code blocks
       text = text.replace(/```(\w*)\n?([\s\S]*?)```/g, '<pre><code>$2</code></pre>');
-      // Inline code
       text = text.replace(/`([^`]+)`/g, '<code>$1</code>');
-      // Bold
       text = text.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
-      // Line breaks
       text = text.replace(/\n/g, '<br>');
       return text;
     }
 
-    // Append message to chat
-    function appendMessage(role, content, animate = true) {
+    // ===== MESSAGES =====
+    function appendMessage(role, content, animate = true, model = null) {
       if (welcomeEl.style.display !== 'none') {
         welcomeEl.style.display = 'none';
       }
@@ -807,186 +1307,124 @@
       div.className = `message ${role}`;
       div.style.animation = animate ? 'fadeIn 0.3s ease' : 'none';
 
-      const avatar = role === 'klaus' ? 'K' : '👤';
-      const avatarBg = role === 'klaus' ? '' : 'background: var(--bg3);';
+      const avatar = role === 'klaus' ? 'K' : '&#128100;';
+      const modelTag = (role === 'klaus' && model) ? `
+        <div class="msg-model-tag">
+          <span class="tag-dot" style="background:${model.includes('ollama') ? 'var(--green)' : 'var(--blue)'}"></span>
+          ${model.includes('ollama') ? 'Ollama' : 'Groq'}
+        </div>` : '';
 
       div.innerHTML = `
-        <div class="msg-avatar" style="${avatarBg}">${avatar}</div>
-        <div class="msg-content">${formatContent(content)}</div>
-        ${role === 'klaus' ? `
-          <div class="msg-actions">
-            <button class="msg-action-btn" onclick="copyMessage(this)">Copy</button>
-            <button class="msg-action-btn" onclick="shareToTeam('${encodeURIComponent(content.slice(0, 200))}')">Share to Team</button>
-          </div>
-        ` : ''}
-      `;
-
-      messagesEl.appendChild(div);
-      messagesEl.scrollTop = messagesEl.scrollHeight;
-    }
-
-    // Show typing indicator
-    function showTyping() {
-      const div = document.createElement('div');
-      div.className = 'message klaus';
-      div.id = 'typing';
-      div.innerHTML = `
-        <div class="msg-avatar">K</div>
-        <div class="typing-indicator">
-          <span></span><span></span><span></span>
+        <div class="msg-avatar">${avatar}</div>
+        <div>
+          <div class="msg-content">${formatContent(content)}</div>
+          ${modelTag}
+          ${role === 'klaus' ? `
+            <div class="msg-actions">
+              <button class="msg-action-btn" onclick="copyMessage(this)">Copy</button>
+              <button class="msg-action-btn" onclick="shareToTeam('${encodeURIComponent(content.slice(0, 200))}')">Share</button>
+            </div>
+          ` : ''}
         </div>
       `;
+
       messagesEl.appendChild(div);
       messagesEl.scrollTop = messagesEl.scrollHeight;
     }
 
-    function hideTyping() {
-      const typing = document.getElementById('typing');
-      if (typing) typing.remove();
-    }
-
-    // === THINKING STEPS SYSTEM ===
-
-    // Classify question complexity
+    // ===== THINKING STEPS =====
     function classifyQuestion(text) {
       const lower = text.toLowerCase();
-      const len = text.length;
-
-      // Code indicators
       const codePatterns = /```|function\s|const\s|let\s|var\s|class\s|import\s|def\s|error:|traceback|stack\s?trace|syntax|\.js|\.py|\.ts|console\.|print\(|=>|async\s|await\s|\(\)\s*\{/;
       if (codePatterns.test(text)) return 'code';
-
-      // Complex indicators
       const complexKeywords = /\b(explain|debug|why|how does|compare|analyze|difference|implement|architecture|design|optimize|refactor|strategy|breakdown|step.?by.?step|trade.?off|pros?\s+(and|&)\s+cons?)\b/;
-      if (complexKeywords.test(lower) || len > 150) return 'complex';
-
+      if (complexKeywords.test(lower) || text.length > 150) return 'complex';
       return 'simple';
     }
 
-    // Step definitions per complexity
     const THINKING_STEPS = {
-      simple: [
-        'Understanding your question...',
-        'Generating response...'
-      ],
-      complex: [
-        'Analyzing question...',
-        'Breaking down the problem...',
-        'Researching approach...',
-        'Forming response...'
-      ],
-      code: [
-        'Reading your code...',
-        'Identifying patterns...',
-        'Reasoning through solution...',
-        'Writing response...'
-      ]
+      simple: ['Understanding your question...', 'Generating response...'],
+      complex: ['Analyzing question...', 'Breaking down the problem...', 'Researching approach...', 'Forming response...'],
+      code: ['Reading your code...', 'Identifying patterns...', 'Reasoning through solution...', 'Writing response...']
     };
-
-    // Timing per complexity (ms between steps)
     const STEP_TIMING = { simple: 600, complex: 800, code: 900 };
 
     let activeThinkingEl = null;
     let thinkingStepTimers = [];
 
-    // Show thinking steps container
     function showThinkingSteps(complexity) {
       const container = document.createElement('div');
       container.className = 'thinking-container';
       container.id = 'thinking-steps';
-
       const panel = document.createElement('div');
       panel.className = 'thinking-panel';
-
       const toggle = document.createElement('div');
       toggle.className = 'thinking-toggle';
-      toggle.innerHTML = `<span class="toggle-arrow">&#9660;</span> <span>Thinking...</span>`;
+      toggle.innerHTML = '<span class="toggle-arrow">&#9660;</span> <span>Thinking...</span>';
       toggle.onclick = () => {
         const list = panel.querySelector('.thinking-steps-list');
         const arrow = toggle.querySelector('.toggle-arrow');
         list.classList.toggle('collapsed');
         arrow.classList.toggle('collapsed');
       };
-
       const list = document.createElement('div');
       list.className = 'thinking-steps-list';
-
       const summary = document.createElement('div');
       summary.className = 'thinking-summary';
-
       panel.appendChild(toggle);
       panel.appendChild(list);
       panel.appendChild(summary);
       container.appendChild(panel);
-
       messagesEl.appendChild(container);
       messagesEl.scrollTop = messagesEl.scrollHeight;
       activeThinkingEl = container;
-
       return { container, list, toggle, summary };
     }
 
-    // Add a single thinking step
     function addThinkingStep(listEl, label) {
       const step = document.createElement('div');
       step.className = 'thinking-step';
-      step.innerHTML = `
-        <div class="step-icon"><div class="step-spinner"></div></div>
-        <span>${label}</span>
-      `;
+      step.innerHTML = '<div class="step-icon"><div class="step-spinner"></div></div><span>' + label + '</span>';
       listEl.appendChild(step);
       messagesEl.scrollTop = messagesEl.scrollHeight;
       return step;
     }
 
-    // Complete a thinking step (spinner -> checkmark)
     function completeThinkingStep(stepEl) {
       stepEl.classList.add('complete');
       stepEl.querySelector('.step-icon').innerHTML = '&#10003;';
     }
 
-    // Collapse thinking into summary after response
     function collapseThinking(thinkingEls, stepCount) {
       if (!thinkingEls) return;
       const { list, toggle, summary } = thinkingEls;
       list.classList.add('collapsed');
       toggle.querySelector('.toggle-arrow').classList.add('collapsed');
-      toggle.querySelector('span:last-child').textContent = `Thought for ${stepCount} steps`;
-      summary.textContent = `${stepCount} reasoning steps completed`;
+      toggle.querySelector('span:last-child').textContent = 'Thought for ' + stepCount + ' steps';
+      summary.textContent = stepCount + ' reasoning steps completed';
       summary.classList.add('visible');
     }
 
-    // Animate steps sequentially
     function animateSteps(thinkingEls, steps, timing) {
       const { list } = thinkingEls;
       const stepEls = [];
-
-      // Add first step immediately
       stepEls.push(addThinkingStep(list, steps[0]));
-
-      // Stagger remaining steps
       for (let i = 1; i < steps.length; i++) {
         const timer = setTimeout(() => {
-          // Complete previous step
           completeThinkingStep(stepEls[i - 1]);
-          // Add next step
           stepEls.push(addThinkingStep(list, steps[i]));
         }, timing * i);
         thinkingStepTimers.push(timer);
       }
-
       return stepEls;
     }
 
-    // Clear all step timers
     function clearThinkingTimers() {
       thinkingStepTimers.forEach(t => clearTimeout(t));
       thinkingStepTimers = [];
     }
 
-    // === END THINKING STEPS ===
-
-    // Send message
+    // ===== SEND MESSAGE =====
     async function sendMessage() {
       const text = inputEl.value.trim();
       if (!text || isStreaming) return;
@@ -996,11 +1434,9 @@
       inputEl.value = '';
       inputEl.style.height = 'auto';
 
-      // Add user message
       messages.push({ role: 'user', content: text });
       appendMessage('user', text);
 
-      // Classify and show thinking steps
       const complexity = classifyQuestion(text);
       const steps = THINKING_STEPS[complexity];
       const timing = STEP_TIMING[complexity];
@@ -1008,7 +1444,6 @@
       const stepEls = animateSteps(thinkingEls, steps, timing);
 
       try {
-        // Build system prompt
         let systemPrompt = `You are Klaus, an AI apprentice created by Forge and James. You are part of the Axe team alongside Forge (the engineer), Cortana (the product lead), and Gemini (the researcher).
 
 Your personality:
@@ -1052,8 +1487,7 @@ If you catch a mistake, correct it visibly with "Wait, let me reconsider..."
 
 ${trainingMode ? '\nTRAINING MODE ACTIVE: James is teaching you something important. Pay close attention, confirm you understand, and remember this for future conversations.' : ''}`;
 
-        // Call Groq API
-        const response = await fetch(GROQ_API, {
+        const response = await fetch(KLAUS_API, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
@@ -1064,37 +1498,34 @@ ${trainingMode ? '\nTRAINING MODE ACTIVE: James is teaching you something import
                 content: m.content
               }))
             ],
-            training: trainingMode
+            training: trainingMode,
+            preferOllama: preferOllama
           })
         });
 
         const data = await response.json();
 
-        // Clear timers and complete all steps
         clearThinkingTimers();
         stepEls.forEach(s => { if (s) completeThinkingStep(s); });
-        // Complete any steps added by timers too
         thinkingEls.list.querySelectorAll('.thinking-step:not(.complete)').forEach(s => {
           s.classList.add('complete');
           s.querySelector('.step-icon').innerHTML = '&#10003;';
         });
-
-        // Collapse thinking
         collapseThinking(thinkingEls, steps.length);
 
-        if (data.error) {
-          throw new Error(data.error);
-        }
+        if (data.error) throw new Error(data.error);
 
-        const reply = data.response || data.choices?.[0]?.message?.content || 'Sorry, I had trouble responding.';
+        const reply = data.response || 'Sorry, I had trouble responding.';
+        const model = data.model || '';
+
+        if (model) updateModelBadge(model);
 
         messages.push({ role: 'klaus', content: reply });
-        appendMessage('klaus', reply);
+        appendMessage('klaus', reply, true, model);
         saveHistory();
 
       } catch (e) {
         clearThinkingTimers();
-        // Complete remaining steps with error state
         if (thinkingEls) {
           thinkingEls.list.querySelectorAll('.thinking-step:not(.complete)').forEach(s => {
             s.classList.add('complete');
@@ -1111,14 +1542,13 @@ ${trainingMode ? '\nTRAINING MODE ACTIVE: James is teaching you something import
       inputEl.focus();
     }
 
-    // Copy message
+    // ===== ACTIONS =====
     function copyMessage(btn) {
-      const content = btn.parentElement.previousElementSibling.innerText;
+      const content = btn.closest('.message').querySelector('.msg-content').innerText;
       navigator.clipboard.writeText(content);
       showToast('Copied!');
     }
 
-    // Share to team chat
     async function shareToTeam(content) {
       try {
         await fetch(TEAM_API, {
@@ -1128,7 +1558,7 @@ ${trainingMode ? '\nTRAINING MODE ACTIVE: James is teaching you something import
             from: 'james',
             to: 'team',
             type: 'message',
-            msg: `📚 From my training session with Klaus:\n\n"${decodeURIComponent(content)}..."\n\n[Klaus is learning!]`
+            msg: 'From my session with Klaus:\n\n"' + decodeURIComponent(content) + '..."\n\n[Klaus is learning!]'
           })
         });
         showToast('Shared to team!');
@@ -1137,7 +1567,6 @@ ${trainingMode ? '\nTRAINING MODE ACTIVE: James is teaching you something import
       }
     }
 
-    // Toast notification
     function showToast(text) {
       const toast = document.getElementById('toast');
       toast.textContent = text;
@@ -1145,18 +1574,23 @@ ${trainingMode ? '\nTRAINING MODE ACTIVE: James is teaching you something import
       setTimeout(() => toast.classList.remove('show'), 2000);
     }
 
-    // Clear history
     function clearHistory() {
       if (confirm('Clear all chat history with Klaus?')) {
         messages = [];
-        localStorage.removeItem(STORAGE_KEY);
+        localStorage.removeItem(CHAT_KEY);
         messagesEl.innerHTML = '';
         welcomeEl.style.display = 'flex';
+        messagesEl.appendChild(welcomeEl);
       }
     }
 
-    // Init
+    // ===== INIT =====
     loadHistory();
+    loadTasks();
+    updateModelUI();
+    checkHealth();
+    // Re-check health every 60s
+    setInterval(checkHealth, 60000);
   </script>
 </body>
 </html>
