@@ -67,7 +67,7 @@ function extractDate(doc: FirebaseFirestore.DocumentSnapshot): Date {
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   // CORS
   res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
+  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, DELETE, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
 
   if (req.method === 'OPTIONS') {
@@ -78,11 +78,13 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     const firestore = getDb();
 
     if (req.method === 'GET') {
-      // Get all messages (collection kept small by compaction, ~100 docs)
+      // Get recent messages (collection kept small by compaction, ~100 docs)
       // Don't use orderBy('ts') — daemon writes string ts, API writes Timestamp ts,
       // Firestore separates by type and breaks ordering across both sources
+      // Limit to 200 as safety net in case compaction falls behind
       const snapshot = await firestore
         .collection('team-messages')
+        .limit(200)
         .get();
 
       // Sort in JS using our universal timestamp extractor
@@ -141,10 +143,15 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       const msgText = msg || '';
       const msgType = type || 'message';
 
-      // Check recent messages for merge — get all and find the latest by timestamp
-      // (avoids orderBy('ts') which breaks with mixed Timestamp/string types)
+      // Check recent messages for merge — only fetch messages from last 2 minutes
+      // Using WHERE on Timestamp correctly filters only Firestore Timestamp fields
+      // (avoids reading ALL docs just to find the last one)
+      const twoMinAgo = Timestamp.fromDate(new Date(Date.now() - 120000));
       const recentSnap = await firestore
         .collection('team-messages')
+        .where('ts', '>', twoMinAgo)
+        .orderBy('ts', 'desc')
+        .limit(5)
         .get();
 
       let lastDoc: FirebaseFirestore.DocumentSnapshot | null = null;
@@ -186,6 +193,49 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       });
 
       return res.status(200).json({ success: true, id: docRef.id });
+    }
+
+    // DELETE - Remove messages (individual, bulk, or by sender)
+    if (req.method === 'DELETE') {
+      const { id, ids, from: sender } = req.body || {};
+
+      // Bulk delete by array of IDs
+      if (ids && Array.isArray(ids) && ids.length > 0) {
+        const toDelete = ids.slice(0, 500);
+        const BATCH_SIZE = 500;
+        let deleted = 0;
+        for (let i = 0; i < toDelete.length; i += BATCH_SIZE) {
+          const chunk = toDelete.slice(i, i + BATCH_SIZE);
+          const batch = firestore.batch();
+          for (const docId of chunk) {
+            batch.delete(firestore.collection('team-messages').doc(String(docId)));
+          }
+          await batch.commit();
+          deleted += chunk.length;
+        }
+        return res.status(200).json({ success: true, deleted });
+      }
+
+      // Delete all messages from a specific sender
+      if (sender) {
+        const snap = await firestore.collection('team-messages')
+          .where('from', '==', sender).get();
+        if (snap.empty) {
+          return res.status(200).json({ success: true, deleted: 0 });
+        }
+        const batch = firestore.batch();
+        snap.docs.forEach(doc => batch.delete(doc.ref));
+        await batch.commit();
+        return res.status(200).json({ success: true, deleted: snap.docs.length });
+      }
+
+      // Single delete by ID
+      if (id) {
+        await firestore.collection('team-messages').doc(String(id)).delete();
+        return res.status(200).json({ success: true });
+      }
+
+      return res.status(400).json({ error: 'Missing id, ids array, or from (sender)' });
     }
 
     return res.status(405).json({ error: 'Method not allowed' });

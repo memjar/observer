@@ -28,7 +28,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     // GET - List all projects
     if (req.method === 'GET') {
-      const snapshot = await col.orderBy('createdAt', 'desc').get();
+      const snapshot = await col.orderBy('createdAt', 'desc').limit(50).get();
       const projects = snapshot.docs.map(doc => ({ ...doc.data(), _docId: doc.id }));
       return res.status(200).json({ projects });
     }
@@ -75,10 +75,32 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       return res.status(400).json({ error: 'Missing project or projects array' });
     }
 
-    // DELETE - Remove a project
+    // DELETE - Remove project(s): individual, bulk by IDs, or by status
     if (req.method === 'DELETE') {
-      const { id } = req.body || {};
-      if (!id) return res.status(400).json({ error: 'Missing project id' });
+      const { id, ids, status } = req.body || {};
+
+      // Bulk delete by array of IDs
+      if (ids && Array.isArray(ids) && ids.length > 0) {
+        const batch = firestore.batch();
+        for (const pid of ids.slice(0, 500)) {
+          batch.delete(col.doc(String(pid)));
+        }
+        await batch.commit();
+        return res.status(200).json({ success: true, deleted: ids.length });
+      }
+
+      // Delete all projects with a specific status
+      if (status) {
+        const snap = await col.where('status', '==', status).get();
+        if (snap.empty) return res.status(200).json({ success: true, deleted: 0 });
+        const batch = firestore.batch();
+        snap.docs.forEach(doc => batch.delete(doc.ref));
+        await batch.commit();
+        return res.status(200).json({ success: true, deleted: snap.docs.length });
+      }
+
+      // Single delete by ID
+      if (!id) return res.status(400).json({ error: 'Missing project id, ids array, or status' });
       await col.doc(String(id)).delete();
       return res.status(200).json({ success: true });
     }
