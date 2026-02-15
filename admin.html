@@ -1,0 +1,871 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="theme-color" content="#0a0a0a">
+  <title>AXE Admin — Agent Control Center</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    :root {
+      --bg: #0a0a0a; --surface: #141414; --border: #1e1e1e;
+      --text: #e5e5e5; --muted: #737373; --cyan: #22d3ee;
+      --green: #4ade80; --yellow: #facc15; --red: #f87171;
+      --orange: #f97316; --radius: 12px;
+    }
+    body {
+      font-family: 'Inter', -apple-system, sans-serif;
+      background: var(--bg); color: var(--text);
+      min-height: 100vh; overflow-x: hidden;
+    }
+    .mono { font-family: 'JetBrains Mono', monospace; }
+
+    /* Layout */
+    .header {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 20px 24px; border-bottom: 1px solid var(--border);
+      position: sticky; top: 0; background: var(--bg); z-index: 50;
+    }
+    .header h1 { font-size: 20px; font-weight: 700; letter-spacing: -0.5px; }
+    .header h1 span { color: var(--orange); }
+    .header-actions { display: flex; gap: 8px; align-items: center; }
+    .badge {
+      padding: 4px 10px; border-radius: 20px; font-size: 11px; font-weight: 600;
+    }
+    .badge-green { background: rgba(74,222,128,.15); color: var(--green); }
+    .badge-yellow { background: rgba(250,204,21,.15); color: var(--yellow); }
+    .badge-red { background: rgba(248,113,113,.15); color: var(--red); }
+
+    .container { max-width: 1200px; margin: 0 auto; padding: 24px; }
+    .tabs {
+      display: flex; gap: 4px; padding: 4px; background: var(--surface);
+      border-radius: 10px; margin-bottom: 24px; overflow-x: auto;
+    }
+    .tab {
+      padding: 10px 20px; border-radius: 8px; font-size: 13px; font-weight: 500;
+      cursor: pointer; border: none; background: none; color: var(--muted);
+      transition: all .15s; white-space: nowrap;
+    }
+    .tab:hover { color: var(--text); }
+    .tab.active { background: var(--bg); color: var(--cyan); }
+
+    .grid { display: grid; gap: 16px; }
+    .grid-2 { grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); }
+    .grid-3 { grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); }
+    .grid-4 { grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); }
+
+    .card {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: var(--radius); padding: 20px;
+    }
+    .card-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; }
+    .card h3 { font-size: 13px; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: .5px; }
+    .card .value { font-size: 28px; font-weight: 700; margin-top: 4px; }
+    .card .sub { font-size: 12px; color: var(--muted); margin-top: 4px; }
+
+    /* Instance cards */
+    .instance {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: var(--radius); padding: 20px; position: relative;
+    }
+    .instance.online { border-color: rgba(74,222,128,.3); }
+    .instance.offline { border-color: rgba(248,113,113,.2); }
+    .instance-header { display: flex; align-items: center; gap: 12px; margin-bottom: 16px; }
+    .instance-dot {
+      width: 10px; height: 10px; border-radius: 50%;
+    }
+    .instance-dot.online { background: var(--green); box-shadow: 0 0 8px rgba(74,222,128,.5); }
+    .instance-dot.offline { background: var(--red); opacity: .5; }
+    .instance-name { font-weight: 600; font-size: 15px; }
+    .instance-meta { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
+    .instance-tag {
+      padding: 3px 8px; border-radius: 6px; font-size: 10px; font-weight: 500;
+      background: rgba(255,255,255,.05); color: var(--muted);
+    }
+
+    /* Skills grid */
+    .skill-card {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: var(--radius); padding: 16px;
+    }
+    .skill-card.enabled { border-color: rgba(34,211,238,.2); }
+    .skill-header { display: flex; align-items: center; justify-content: space-between; }
+    .skill-name { font-weight: 600; font-size: 14px; }
+    .toggle {
+      width: 40px; height: 22px; border-radius: 11px; border: none;
+      cursor: pointer; position: relative; transition: background .2s;
+    }
+    .toggle.on { background: var(--cyan); }
+    .toggle.off { background: var(--border); }
+    .toggle::after {
+      content: ''; position: absolute; top: 2px; left: 2px;
+      width: 18px; height: 18px; border-radius: 50%; background: white;
+      transition: transform .2s;
+    }
+    .toggle.on::after { transform: translateX(18px); }
+    .skill-desc { font-size: 12px; color: var(--muted); margin-top: 8px; line-height: 1.5; }
+    .skill-keywords { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 10px; }
+    .kw {
+      padding: 2px 6px; border-radius: 4px; font-size: 9px;
+      background: rgba(255,255,255,.04); color: var(--muted);
+    }
+
+    /* Test chat */
+    .chat-container {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: var(--radius); overflow: hidden; height: 500px;
+      display: flex; flex-direction: column;
+    }
+    .chat-messages {
+      flex: 1; overflow-y: auto; padding: 16px; display: flex;
+      flex-direction: column; gap: 12px;
+    }
+    .chat-msg {
+      max-width: 80%; padding: 10px 14px; border-radius: 12px;
+      font-size: 13px; line-height: 1.5;
+    }
+    .chat-msg.user {
+      align-self: flex-end; background: rgba(34,211,238,.15); color: var(--cyan);
+    }
+    .chat-msg.assistant {
+      align-self: flex-start; background: rgba(255,255,255,.06); color: var(--text);
+    }
+    .chat-msg.system {
+      align-self: center; font-size: 11px; color: var(--muted); font-style: italic;
+    }
+    .chat-input-row {
+      display: flex; gap: 8px; padding: 12px 16px;
+      border-top: 1px solid var(--border);
+    }
+    .chat-input {
+      flex: 1; background: var(--bg); border: 1px solid var(--border);
+      border-radius: 8px; padding: 10px 14px; font-size: 13px;
+      color: var(--text); outline: none; font-family: inherit;
+    }
+    .chat-input:focus { border-color: var(--cyan); }
+    .chat-send {
+      padding: 10px 20px; background: var(--cyan); color: #000;
+      border: none; border-radius: 8px; font-weight: 600; font-size: 13px;
+      cursor: pointer; transition: opacity .15s;
+    }
+    .chat-send:hover { opacity: .85; }
+    .chat-send:disabled { opacity: .4; cursor: not-allowed; }
+
+    /* Architecture view */
+    .arch-block {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: var(--radius); padding: 16px; margin-bottom: 12px;
+    }
+    .arch-title { font-weight: 600; font-size: 14px; margin-bottom: 8px; display: flex; align-items: center; gap: 8px; }
+    .arch-items { display: flex; flex-wrap: wrap; gap: 6px; }
+    .arch-item {
+      padding: 4px 10px; border-radius: 6px; font-size: 11px;
+      background: rgba(255,255,255,.04); color: var(--muted); border: 1px solid var(--border);
+    }
+    .arch-item.active { border-color: rgba(34,211,238,.3); color: var(--cyan); }
+
+    /* Config editor */
+    .config-section { margin-bottom: 20px; }
+    .config-section h3 { font-size: 14px; font-weight: 600; margin-bottom: 12px; }
+    .config-row {
+      display: flex; align-items: center; gap: 12px; padding: 10px 0;
+      border-bottom: 1px solid rgba(255,255,255,.04);
+    }
+    .config-label { width: 140px; font-size: 12px; color: var(--muted); }
+    .config-value {
+      flex: 1; background: var(--bg); border: 1px solid var(--border);
+      border-radius: 6px; padding: 8px 12px; font-size: 12px;
+      color: var(--text); font-family: 'JetBrains Mono', monospace;
+      outline: none;
+    }
+    .config-value:focus { border-color: var(--cyan); }
+    select.config-value { cursor: pointer; }
+
+    .btn {
+      padding: 8px 16px; border-radius: 8px; font-size: 12px; font-weight: 600;
+      cursor: pointer; border: none; transition: all .15s;
+    }
+    .btn-primary { background: var(--cyan); color: #000; }
+    .btn-primary:hover { opacity: .85; }
+    .btn-outline {
+      background: none; border: 1px solid var(--border); color: var(--text);
+    }
+    .btn-outline:hover { border-color: var(--muted); }
+    .btn-danger { background: rgba(248,113,113,.15); color: var(--red); }
+
+    .hidden { display: none !important; }
+
+    /* Comparison table */
+    .compare-table { width: 100%; border-collapse: collapse; font-size: 12px; }
+    .compare-table th {
+      text-align: left; padding: 10px 12px; font-weight: 600;
+      color: var(--muted); border-bottom: 1px solid var(--border);
+      font-size: 11px; text-transform: uppercase; letter-spacing: .5px;
+    }
+    .compare-table td {
+      padding: 10px 12px; border-bottom: 1px solid rgba(255,255,255,.03);
+    }
+    .compare-table .ours { color: var(--cyan); font-weight: 500; }
+    .compare-table .theirs { color: var(--muted); }
+    .compare-table .advantage { color: var(--green); }
+
+    /* Responsive */
+    @media (max-width: 640px) {
+      .container { padding: 16px; }
+      .grid-2, .grid-3, .grid-4 { grid-template-columns: 1fr; }
+      .card .value { font-size: 22px; }
+      .tab { padding: 8px 14px; font-size: 12px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <h1>A<span>X</span>E Admin</h1>
+    <div class="header-actions">
+      <span class="badge badge-green" id="gatewayBadge">Gateway: checking...</span>
+      <span class="badge badge-yellow mono" id="versionBadge">v0.1.0</span>
+    </div>
+  </div>
+
+  <div class="container">
+    <div class="tabs" id="tabs">
+      <button class="tab active" data-tab="overview">Overview</button>
+      <button class="tab" data-tab="instances">Instances</button>
+      <button class="tab" data-tab="skills">Skills</button>
+      <button class="tab" data-tab="test">Test Chat</button>
+      <button class="tab" data-tab="config">Config</button>
+      <button class="tab" data-tab="compare">AXE vs OpenClaw</button>
+    </div>
+
+    <!-- OVERVIEW TAB -->
+    <div id="tab-overview" class="tab-content">
+      <div class="grid grid-4" style="margin-bottom:24px">
+        <div class="card">
+          <h3>Instances</h3>
+          <div class="value" id="instanceCount">0</div>
+          <div class="sub">Registered terminals</div>
+        </div>
+        <div class="card">
+          <h3>Online</h3>
+          <div class="value" style="color:var(--green)" id="onlineCount">0</div>
+          <div class="sub">Active now</div>
+        </div>
+        <div class="card">
+          <h3>Messages Today</h3>
+          <div class="value" style="color:var(--cyan)" id="msgCount">0</div>
+          <div class="sub">Across all instances</div>
+        </div>
+        <div class="card">
+          <h3>Total Cost</h3>
+          <div class="value mono" style="color:var(--green)" id="costTotal">$0.00</div>
+          <div class="sub">Ollama = free</div>
+        </div>
+      </div>
+
+      <!-- Architecture overview -->
+      <div class="card" style="margin-bottom:16px">
+        <h3 style="margin-bottom:16px">Architecture</h3>
+        <div class="arch-block">
+          <div class="arch-title">🖥️ CLI</div>
+          <div class="arch-items">
+            <span class="arch-item active">axe start</span>
+            <span class="arch-item active">axe stop</span>
+            <span class="arch-item active">axe status</span>
+            <span class="arch-item active">axe onboard</span>
+            <span class="arch-item active">axe dashboard</span>
+            <span class="arch-item active">axe skill</span>
+          </div>
+        </div>
+        <div class="arch-block">
+          <div class="arch-title">🌐 Gateway (Express + WebSocket :18789)</div>
+          <div class="arch-items">
+            <span class="arch-item active">WebChat</span>
+            <span class="arch-item">Telegram</span>
+            <span class="arch-item">Slack</span>
+            <span class="arch-item">Discord</span>
+            <span class="arch-item active">WhatsApp</span>
+            <span class="arch-item active">REST API</span>
+          </div>
+        </div>
+        <div class="arch-block">
+          <div class="arch-title">🧠 Agent Runtime</div>
+          <div class="arch-items">
+            <span class="arch-item active">LLM Providers</span>
+            <span class="arch-item active">Skill System</span>
+            <span class="arch-item active">Usage Tracking</span>
+            <span class="arch-item active">Session Persistence</span>
+            <span class="arch-item">Tool Call Loop</span>
+            <span class="arch-item">Hybrid Memory</span>
+            <span class="arch-item">SOUL.md</span>
+          </div>
+        </div>
+        <div class="arch-block">
+          <div class="arch-title">📦 Config (~/.axe/)</div>
+          <div class="arch-items">
+            <span class="arch-item active">config.json</span>
+            <span class="arch-item active">sessions/</span>
+            <span class="arch-item active">skills/</span>
+            <span class="arch-item active">usage/</span>
+            <span class="arch-item">memory/</span>
+            <span class="arch-item">workspace/</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Roadmap -->
+      <div class="card">
+        <h3 style="margin-bottom:16px">Build Roadmap</h3>
+        <div style="display:flex;flex-direction:column;gap:8px">
+          <div style="display:flex;align-items:center;gap:10px">
+            <span style="color:var(--green);font-size:14px">✓</span>
+            <span style="font-size:13px">CLI + Gateway + WebChat + REST API</span>
+          </div>
+          <div style="display:flex;align-items:center;gap:10px">
+            <span style="color:var(--green);font-size:14px">✓</span>
+            <span style="font-size:13px">Multi-provider LLM (Ollama / Groq / Claude / OpenAI)</span>
+          </div>
+          <div style="display:flex;align-items:center;gap:10px">
+            <span style="color:var(--green);font-size:14px">✓</span>
+            <span style="font-size:13px">Usage tracking + budget enforcement</span>
+          </div>
+          <div style="display:flex;align-items:center;gap:10px">
+            <span style="color:var(--green);font-size:14px">✓</span>
+            <span style="font-size:13px">SKILL.md skill system with dashboard toggles</span>
+          </div>
+          <div style="display:flex;align-items:center;gap:10px">
+            <span style="color:var(--green);font-size:14px">✓</span>
+            <span style="font-size:13px">Session persistence + auto-compaction</span>
+          </div>
+          <div style="display:flex;align-items:center;gap:10px">
+            <span style="color:var(--green);font-size:14px">✓</span>
+            <span style="font-size:13px">WhatsApp adapter (Baileys)</span>
+          </div>
+          <div style="display:flex;align-items:center;gap:10px">
+            <span style="color:var(--cyan);font-size:14px">→</span>
+            <span style="font-size:13px;color:var(--cyan)">React dashboard build (Chat, Skills, Usage, Settings)</span>
+          </div>
+          <div style="display:flex;align-items:center;gap:10px">
+            <span style="color:var(--muted);font-size:14px">○</span>
+            <span style="font-size:13px;color:var(--muted)">SOUL.md workspace files (persona injection)</span>
+          </div>
+          <div style="display:flex;align-items:center;gap:10px">
+            <span style="color:var(--muted);font-size:14px">○</span>
+            <span style="font-size:13px;color:var(--muted)">Tool call loop (execute → re-call until done)</span>
+          </div>
+          <div style="display:flex;align-items:center;gap:10px">
+            <span style="color:var(--muted);font-size:14px">○</span>
+            <span style="font-size:13px;color:var(--muted)">Hybrid memory (SQLite + vector search)</span>
+          </div>
+          <div style="display:flex;align-items:center;gap:10px">
+            <span style="color:var(--muted);font-size:14px">○</span>
+            <span style="font-size:13px;color:var(--muted)">Heartbeat proactive scheduler</span>
+          </div>
+          <div style="display:flex;align-items:center;gap:10px">
+            <span style="color:var(--muted);font-size:14px">○</span>
+            <span style="font-size:13px;color:var(--muted)">npm publish: axe-agent@0.1.0</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- INSTANCES TAB -->
+    <div id="tab-instances" class="tab-content hidden">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px">
+        <h2 style="font-size:18px;font-weight:700">Agent Instances</h2>
+        <button class="btn btn-primary" onclick="registerInstance()">+ Register Terminal</button>
+      </div>
+      <div class="grid grid-2" id="instanceGrid">
+        <!-- populated by JS -->
+      </div>
+      <div id="noInstances" class="card" style="text-align:center;padding:40px">
+        <p style="color:var(--muted);margin-bottom:12px">No instances registered yet</p>
+        <p style="font-size:12px;color:var(--muted)">Run <code class="mono" style="color:var(--cyan)">npm install -g axe-agent && axe onboard</code> on a terminal to get started</p>
+      </div>
+    </div>
+
+    <!-- SKILLS TAB -->
+    <div id="tab-skills" class="tab-content hidden">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px">
+        <h2 style="font-size:18px;font-weight:700">Skill Library</h2>
+        <span style="font-size:12px;color:var(--muted)" id="skillCount"></span>
+      </div>
+      <div class="grid grid-3" id="skillGrid">
+        <!-- populated by JS -->
+      </div>
+    </div>
+
+    <!-- TEST CHAT TAB -->
+    <div id="tab-test" class="tab-content hidden">
+      <div style="display:flex;gap:16px;margin-bottom:16px;align-items:center">
+        <h2 style="font-size:18px;font-weight:700">Test Agent</h2>
+        <label style="font-size:12px;color:var(--muted)">Endpoint:</label>
+        <input id="chatEndpoint" class="config-value" style="max-width:340px" value="http://localhost:18789" placeholder="http://localhost:18789">
+      </div>
+      <div class="chat-container">
+        <div class="chat-messages" id="chatMessages">
+          <div class="chat-msg system">Connect to a running AXE instance to test</div>
+        </div>
+        <div class="chat-input-row">
+          <input class="chat-input" id="chatInput" placeholder="Type a message..." onkeydown="if(event.key==='Enter')sendChat()">
+          <button class="chat-send" id="chatSendBtn" onclick="sendChat()">Send</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- CONFIG TAB -->
+    <div id="tab-config" class="tab-content hidden">
+      <h2 style="font-size:18px;font-weight:700;margin-bottom:20px">Default Config</h2>
+      <p style="font-size:12px;color:var(--muted);margin-bottom:20px">
+        This config is pushed to new instances during onboarding. Edit the instance config locally at <code class="mono" style="color:var(--cyan)">~/.axe/config.json</code>
+      </p>
+
+      <div class="config-section">
+        <h3>LLM Provider</h3>
+        <div class="config-row">
+          <span class="config-label">Provider</span>
+          <select class="config-value" id="cfgProvider">
+            <option value="ollama">Ollama (Free, Local)</option>
+            <option value="groq">Groq (Free Tier)</option>
+            <option value="claude">Claude (Paid)</option>
+            <option value="openai">OpenAI (Paid)</option>
+          </select>
+        </div>
+        <div class="config-row">
+          <span class="config-label">Model</span>
+          <input class="config-value" id="cfgModel" value="llama3.1:8b">
+        </div>
+        <div class="config-row">
+          <span class="config-label">Base URL</span>
+          <input class="config-value" id="cfgBaseUrl" value="http://localhost:11434">
+        </div>
+        <div class="config-row">
+          <span class="config-label">Temperature</span>
+          <input class="config-value" id="cfgTemp" type="number" step="0.1" value="0.7">
+        </div>
+        <div class="config-row">
+          <span class="config-label">Max Tokens</span>
+          <input class="config-value" id="cfgMaxTokens" type="number" value="2048">
+        </div>
+      </div>
+
+      <div class="config-section">
+        <h3>Agent</h3>
+        <div class="config-row">
+          <span class="config-label">Name</span>
+          <input class="config-value" id="cfgName" value="Axi">
+        </div>
+        <div class="config-row">
+          <span class="config-label">Gateway Port</span>
+          <input class="config-value" id="cfgPort" type="number" value="18789">
+        </div>
+      </div>
+
+      <div style="display:flex;gap:8px;margin-top:16px">
+        <button class="btn btn-primary" onclick="saveConfig()">Save Default Config</button>
+        <button class="btn btn-outline" onclick="loadConfig()">Reset</button>
+      </div>
+    </div>
+
+    <!-- COMPARE TAB -->
+    <div id="tab-compare" class="tab-content hidden">
+      <h2 style="font-size:18px;font-weight:700;margin-bottom:20px">AXE vs OpenClaw</h2>
+      <div class="card">
+        <table class="compare-table">
+          <thead>
+            <tr><th>Feature</th><th>AXE (Ours)</th><th>OpenClaw</th><th>Status</th></tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Install</td>
+              <td class="ours mono">npm i -g axe-agent</td>
+              <td class="theirs mono">pnpm monorepo clone</td>
+              <td class="advantage">✓ Simpler</td>
+            </tr>
+            <tr>
+              <td>Default LLM</td>
+              <td class="ours">Ollama (free, local)</td>
+              <td class="theirs">Together API ($)</td>
+              <td class="advantage">✓ Zero cost</td>
+            </tr>
+            <tr>
+              <td>Dashboard</td>
+              <td class="ours">React Web UI</td>
+              <td class="theirs">CLI only</td>
+              <td class="advantage">✓ Visual</td>
+            </tr>
+            <tr>
+              <td>Channels</td>
+              <td class="ours">WebChat, WhatsApp, Telegram, Slack, Discord</td>
+              <td class="theirs">CLI, Discord, Slack, Telegram, Webhook</td>
+              <td style="color:var(--yellow)">≈ Parity</td>
+            </tr>
+            <tr>
+              <td>Skills</td>
+              <td class="ours">SKILL.md + dashboard toggle</td>
+              <td class="theirs">manifest.json + trigger keywords</td>
+              <td style="color:var(--yellow)">≈ Different approach</td>
+            </tr>
+            <tr>
+              <td>Memory</td>
+              <td class="theirs">JSON files</td>
+              <td class="ours" style="color:var(--red)">SQLite + vector + FTS5</td>
+              <td style="color:var(--red)">✗ They're ahead</td>
+            </tr>
+            <tr>
+              <td>Tool Loop</td>
+              <td class="theirs" style="color:var(--red)">Not yet</td>
+              <td class="ours" style="color:var(--green)">LLM → tools → loop</td>
+              <td style="color:var(--red)">✗ They're ahead</td>
+            </tr>
+            <tr>
+              <td>Workspace Files</td>
+              <td class="theirs" style="color:var(--red)">System prompt only</td>
+              <td>SOUL.md, AGENTS.md, MEMORY.md</td>
+              <td style="color:var(--red)">✗ Need to add</td>
+            </tr>
+            <tr>
+              <td>Heartbeat</td>
+              <td class="theirs" style="color:var(--red)">None</td>
+              <td>node-cron proactive scheduler</td>
+              <td style="color:var(--red)">✗ Need to add</td>
+            </tr>
+            <tr>
+              <td>Context Pruning</td>
+              <td class="ours">Auto-compact at 40 msgs</td>
+              <td class="theirs">80% soft trim + hard clear</td>
+              <td style="color:var(--yellow)">≈ Ours is simpler</td>
+            </tr>
+            <tr>
+              <td>Usage Tracking</td>
+              <td class="ours">Per-provider, daily budget</td>
+              <td class="theirs">None built-in</td>
+              <td class="advantage">✓ We're ahead</td>
+            </tr>
+            <tr>
+              <td>Admin Dashboard</td>
+              <td class="ours">axe.observer (this page)</td>
+              <td class="theirs">Nothing</td>
+              <td class="advantage">✓ We're ahead</td>
+            </tr>
+            <tr>
+              <td>Multi-Agent</td>
+              <td class="ours">Forge/Cortana/Klaus team</td>
+              <td class="theirs">Single agent only</td>
+              <td class="advantage">✓ Unique advantage</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="card" style="margin-top:16px">
+        <h3 style="margin-bottom:12px">Priority: What to Steal from OpenClaw</h3>
+        <div style="display:flex;flex-direction:column;gap:8px;font-size:13px">
+          <div>🔴 <strong>Tool Call Loop</strong> — LLM returns tool_calls → execute → re-call. This is table stakes.</div>
+          <div>🔴 <strong>Hybrid Memory</strong> — SQLite + sqlite-vec + FTS5. Massive upgrade from JSON.</div>
+          <div>🟡 <strong>SOUL.md Workspace</strong> — Persona files in ~/.axe/workspace/. Easy win.</div>
+          <div>🟡 <strong>Trigger-based Skills</strong> — Auto-activate skills on keyword match.</div>
+          <div>🟢 <strong>Heartbeat Scheduler</strong> — Proactive cron check-ins. Nice-to-have.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+<script>
+  // Tab switching
+  const tabs = document.querySelectorAll('.tab');
+  const tabContents = document.querySelectorAll('.tab-content');
+  tabs.forEach(tab => {
+    tab.addEventListener('click', () => {
+      tabs.forEach(t => t.classList.remove('active'));
+      tabContents.forEach(c => c.classList.add('hidden'));
+      tab.classList.add('active');
+      document.getElementById('tab-' + tab.dataset.tab).classList.remove('hidden');
+    });
+  });
+
+  // State
+  let instances = [];
+  let defaultConfig = {};
+  const API = '/api/axe-admin';
+
+  // Load instances from Firestore via our API
+  async function loadInstances() {
+    try {
+      const res = await fetch(API + '?action=list');
+      if (res.ok) {
+        const data = await res.json();
+        instances = data.instances || [];
+      }
+    } catch(e) {
+      // Use localStorage fallback
+      instances = JSON.parse(localStorage.getItem('axe-instances') || '[]');
+    }
+    renderInstances();
+    renderOverview();
+  }
+
+  function renderOverview() {
+    const online = instances.filter(i => i.status === 'online');
+    document.getElementById('instanceCount').textContent = instances.length;
+    document.getElementById('onlineCount').textContent = online.length;
+    document.getElementById('msgCount').textContent = instances.reduce((sum, i) => sum + (i.messagestoday || 0), 0);
+    const cost = instances.reduce((sum, i) => sum + (i.costToday || 0), 0);
+    document.getElementById('costTotal').textContent = cost > 0 ? '$' + cost.toFixed(4) : '$0.00';
+  }
+
+  function renderInstances() {
+    const grid = document.getElementById('instanceGrid');
+    const empty = document.getElementById('noInstances');
+    if (instances.length === 0) {
+      grid.innerHTML = '';
+      empty.classList.remove('hidden');
+      return;
+    }
+    empty.classList.add('hidden');
+    grid.innerHTML = instances.map(i => `
+      <div class="instance ${i.status || 'offline'}">
+        <div class="instance-header">
+          <span class="instance-dot ${i.status || 'offline'}"></span>
+          <span class="instance-name">${esc(i.name || 'Unknown')}</span>
+          <span class="badge ${i.status === 'online' ? 'badge-green' : 'badge-red'}" style="margin-left:auto">
+            ${i.status || 'offline'}
+          </span>
+        </div>
+        <div style="font-size:12px;color:var(--muted);margin-bottom:8px">
+          ${esc(i.host || 'localhost')}:${i.port || 18789}
+        </div>
+        <div class="instance-meta">
+          <span class="instance-tag">${esc(i.provider || 'ollama')}</span>
+          <span class="instance-tag">${esc(i.model || 'llama3.1:8b')}</span>
+          <span class="instance-tag">${i.channels ? i.channels.join(', ') : 'webchat'}</span>
+        </div>
+        <div style="display:flex;gap:6px;margin-top:12px">
+          <button class="btn btn-outline" onclick="pingInstance('${esc(i.id)}')">Ping</button>
+          <button class="btn btn-outline" onclick="openDashboard('${esc(i.endpoint || '')}')">Dashboard</button>
+          <button class="btn btn-danger" onclick="removeInstance('${esc(i.id)}')" style="margin-left:auto">Remove</button>
+        </div>
+      </div>
+    `).join('');
+  }
+
+  async function registerInstance() {
+    const name = prompt('Terminal name (e.g. "James MacBook", "Mum iPad"):');
+    if (!name) return;
+    const endpoint = prompt('Gateway URL:', 'http://localhost:18789');
+    if (!endpoint) return;
+
+    const instance = {
+      id: crypto.randomUUID().slice(0, 8),
+      name,
+      endpoint,
+      host: new URL(endpoint).hostname,
+      port: new URL(endpoint).port || 18789,
+      status: 'offline',
+      provider: 'ollama',
+      model: 'llama3.1:8b',
+      channels: ['webchat'],
+      registeredAt: new Date().toISOString(),
+      messagestoday: 0,
+      costToday: 0,
+    };
+
+    // Try to ping it
+    try {
+      const res = await fetch(endpoint + '/api/health', { signal: AbortSignal.timeout(3000) });
+      if (res.ok) {
+        const health = await res.json();
+        instance.status = 'online';
+        instance.version = health.version;
+      }
+    } catch(e) {}
+
+    // Try to get config
+    try {
+      const res = await fetch(endpoint + '/api/config', { signal: AbortSignal.timeout(3000) });
+      if (res.ok) {
+        const cfg = await res.json();
+        instance.provider = cfg.llm?.provider || 'ollama';
+        instance.model = cfg.llm?.model || 'llama3.1:8b';
+        instance.channels = Object.entries(cfg.channels || {})
+          .filter(([,v]) => v.enabled).map(([k]) => k);
+      }
+    } catch(e) {}
+
+    instances.push(instance);
+    await saveInstances();
+    renderInstances();
+    renderOverview();
+  }
+
+  async function pingInstance(id) {
+    const inst = instances.find(i => i.id === id);
+    if (!inst) return;
+    try {
+      const res = await fetch(inst.endpoint + '/api/health', { signal: AbortSignal.timeout(3000) });
+      inst.status = res.ok ? 'online' : 'offline';
+    } catch(e) { inst.status = 'offline'; }
+    await saveInstances();
+    renderInstances();
+    renderOverview();
+  }
+
+  function openDashboard(endpoint) {
+    if (endpoint) window.open(endpoint, '_blank');
+  }
+
+  async function removeInstance(id) {
+    if (!confirm('Remove this instance?')) return;
+    instances = instances.filter(i => i.id !== id);
+    await saveInstances();
+    renderInstances();
+    renderOverview();
+  }
+
+  async function saveInstances() {
+    localStorage.setItem('axe-instances', JSON.stringify(instances));
+    try {
+      await fetch(API, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'save', instances })
+      });
+    } catch(e) {}
+  }
+
+  // Skills
+  const builtinSkills = [
+    { id: 'web-search', name: 'Web Search', description: 'Search the web and summarize results using DuckDuckGo', version: '1.0.0', author: 'axe-team', keywords: ['search','look up','find','google','web'], enabled: true },
+    { id: 'memory', name: 'Memory', description: 'Remember and recall facts, preferences, and notes across conversations', version: '1.0.0', author: 'axe-team', keywords: ['remember','recall','note','save'], enabled: true },
+    { id: 'shell', name: 'Shell', description: 'Execute shell commands on the host machine (sandboxed)', version: '1.0.0', author: 'axe-team', keywords: ['run','execute','command','terminal'], enabled: false },
+    { id: 'file-manager', name: 'File Manager', description: 'Read, write, and list files on the local filesystem', version: '1.0.0', author: 'axe-team', keywords: ['file','read','write','list','directory'], enabled: false },
+  ];
+
+  function renderSkills() {
+    const grid = document.getElementById('skillGrid');
+    document.getElementById('skillCount').textContent = builtinSkills.filter(s=>s.enabled).length + ' of ' + builtinSkills.length + ' enabled';
+    grid.innerHTML = builtinSkills.map(s => `
+      <div class="skill-card ${s.enabled ? 'enabled' : ''}">
+        <div class="skill-header">
+          <span class="skill-name">${esc(s.name)}</span>
+          <button class="toggle ${s.enabled ? 'on' : 'off'}" onclick="toggleSkill('${s.id}')"></button>
+        </div>
+        <div class="skill-desc">${esc(s.description)}</div>
+        <div class="skill-keywords">${s.keywords.map(k => '<span class="kw">' + esc(k) + '</span>').join('')}</div>
+        <div style="margin-top:10px;font-size:10px;color:var(--muted)">v${s.version} · by ${esc(s.author)}</div>
+      </div>
+    `).join('');
+  }
+
+  function toggleSkill(id) {
+    const s = builtinSkills.find(s => s.id === id);
+    if (s) s.enabled = !s.enabled;
+    renderSkills();
+  }
+
+  // Test chat
+  async function sendChat() {
+    const input = document.getElementById('chatInput');
+    const text = input.value.trim();
+    if (!text) return;
+    input.value = '';
+
+    const endpoint = document.getElementById('chatEndpoint').value;
+    const msgs = document.getElementById('chatMessages');
+
+    msgs.innerHTML += `<div class="chat-msg user">${esc(text)}</div>`;
+    msgs.innerHTML += `<div class="chat-msg system" id="typing">Thinking...</div>`;
+    msgs.scrollTop = msgs.scrollHeight;
+
+    try {
+      const res = await fetch(endpoint + '/api/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ text, userId: 'admin-test' })
+      });
+      document.getElementById('typing')?.remove();
+      if (res.ok) {
+        const data = await res.json();
+        msgs.innerHTML += `<div class="chat-msg assistant">${esc(data.text)}</div>`;
+        if (data.metadata?.model) {
+          msgs.innerHTML += `<div class="chat-msg system">${esc(data.metadata.model)} · ${data.metadata.tokensUsed || '?'} tokens</div>`;
+        }
+      } else {
+        msgs.innerHTML += `<div class="chat-msg system" style="color:var(--red)">Error: ${res.status}</div>`;
+      }
+    } catch(e) {
+      document.getElementById('typing')?.remove();
+      msgs.innerHTML += `<div class="chat-msg system" style="color:var(--red)">Connection failed. Is the gateway running?</div>`;
+    }
+    msgs.scrollTop = msgs.scrollHeight;
+  }
+
+  // Config
+  function saveConfig() {
+    const config = {
+      provider: document.getElementById('cfgProvider').value,
+      model: document.getElementById('cfgModel').value,
+      baseUrl: document.getElementById('cfgBaseUrl').value,
+      temperature: parseFloat(document.getElementById('cfgTemp').value),
+      maxTokens: parseInt(document.getElementById('cfgMaxTokens').value),
+      name: document.getElementById('cfgName').value,
+      port: parseInt(document.getElementById('cfgPort').value),
+    };
+    localStorage.setItem('axe-default-config', JSON.stringify(config));
+    fetch(API, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action: 'saveConfig', config })
+    }).catch(() => {});
+    alert('Default config saved');
+  }
+
+  function loadConfig() {
+    const saved = JSON.parse(localStorage.getItem('axe-default-config') || '{}');
+    if (saved.provider) document.getElementById('cfgProvider').value = saved.provider;
+    if (saved.model) document.getElementById('cfgModel').value = saved.model;
+    if (saved.baseUrl) document.getElementById('cfgBaseUrl').value = saved.baseUrl;
+    if (saved.temperature) document.getElementById('cfgTemp').value = saved.temperature;
+    if (saved.maxTokens) document.getElementById('cfgMaxTokens').value = saved.maxTokens;
+    if (saved.name) document.getElementById('cfgName').value = saved.name;
+    if (saved.port) document.getElementById('cfgPort').value = saved.port;
+  }
+
+  // Gateway health check
+  async function checkGateway() {
+    // Check first registered instance or localhost
+    const endpoint = instances[0]?.endpoint || 'http://localhost:18789';
+    const badge = document.getElementById('gatewayBadge');
+    try {
+      const res = await fetch(endpoint + '/api/health', { signal: AbortSignal.timeout(3000) });
+      if (res.ok) {
+        const h = await res.json();
+        badge.textContent = 'Gateway: online';
+        badge.className = 'badge badge-green';
+        document.getElementById('versionBadge').textContent = 'v' + (h.version || '0.1.0');
+      } else {
+        badge.textContent = 'Gateway: error';
+        badge.className = 'badge badge-red';
+      }
+    } catch(e) {
+      badge.textContent = 'Gateway: offline';
+      badge.className = 'badge badge-red';
+    }
+  }
+
+  function esc(s) {
+    const d = document.createElement('div');
+    d.textContent = s || '';
+    return d.innerHTML;
+  }
+
+  // Init
+  loadInstances();
+  loadConfig();
+  renderSkills();
+  checkGateway();
+  setInterval(checkGateway, 30000);
+</script>
+</body>
+</html>
